@@ -3,13 +3,12 @@
 import { useRef } from "react";
 import { config } from "@/lib/graph/layout";
 import { useStatusStore } from "@/stores/statusStore";
-import { Background, Controls, OnConnectStart, ReactFlow, ReactFlowProvider } from "@xyflow/react";
-import { type Node as FlowNode } from "@xyflow/react";
+import { Background, Controls, ReactFlow, ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { debounce } from "lodash-es";
 import MouseButton from "./MouseButton";
 import { ObjectNode, RootNode, VirtualTargetNode } from "./Node";
-import { useClearSearchHl, useRevealNode, useViewportChange } from "./useViewportChange";
+import { useRevealNode, useViewportChange } from "./useViewportChange";
 import useVirtualGraph from "./useVirtualGraph";
 
 export default function Graph() {
@@ -24,7 +23,6 @@ export default function Graph() {
 
 function LayoutGraph() {
   const ref = useRef<HTMLDivElement>(null);
-  const setRevealPosition = useStatusStore((state) => state.setRevealPosition);
   const isTouchpad = useStatusStore((state) => state.isTouchpad);
 
   // The graph will render three times because:
@@ -33,8 +31,7 @@ function LayoutGraph() {
   // 3. xyflow will measure the new `nodes`, which will trigger a render.
   const { nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange, translateExtent } = useVirtualGraph();
   useViewportChange(ref, setNodes, setEdges);
-  useRevealNode(nodes, setNodes, setEdges);
-  const clearSearchHl = useClearSearchHl();
+  useRevealNode(setNodes, setEdges);
 
   return (
     <ReactFlow
@@ -58,35 +55,10 @@ function LayoutGraph() {
       }}
       translateExtent={translateExtent}
       // clear all animated for edges
-      onPaneClick={(_: React.MouseEvent) => {
-        clearSearchHl();
-
-        (async () => {
-          const { nodes, edges } = await window.worker.clearGraphNodeSelected();
-          setNodes(nodes);
-          setEdges(edges);
-        })();
-      }}
-      onNodeClick={(_: React.MouseEvent, node: FlowNode) => {
-        clearSearchHl(node.id);
-        setRevealPosition({ treeNodeId: node.id, type: "node", from: "graphOthers" });
-
-        (async () => {
-          const { nodes, edges } = await window.worker.toggleGraphNodeSelected(node.id);
-          setNodes(nodes);
-          setEdges(edges);
-        })();
-      }}
-      onConnectStart={(_: any, { nodeId, handleId, handleType }: Parameters<OnConnectStart>[1]) => {
-        if (handleType === "target" || !(nodeId && handleId)) {
-          return;
-        }
-
-        (async () => {
-          const { nodes, edges } = await window.worker.toggleGraphNodeHidden(nodeId, handleId);
-          setNodes(nodes);
-          setEdges(edges);
-        })();
+      onPaneClick={async (_: React.MouseEvent) => {
+        const { nodes, edges } = await window.worker.clearGraphNodeSelected();
+        setNodes(nodes);
+        setEdges(edges);
       }}
       onError={onError}
       nodes={nodes}
@@ -96,6 +68,7 @@ function LayoutGraph() {
       nodesDraggable={false}
       nodesConnectable={false}
       connectOnClick={false}
+      zoomOnDoubleClick={false}
       deleteKeyCode={null}
       selectionKeyCode={null}
       multiSelectionKeyCode={null}

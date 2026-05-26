@@ -1,7 +1,9 @@
 import { type Config, defaultConfig, keyName, type ViewMode, type ViewModeValue, storage } from "@/lib/db/config";
-import type { RevealPosition } from "@/lib/graph/types";
-import { type ParseOptions } from "@/lib/parser";
-import { type FunctionKeys } from "@/lib/utils";
+import type { RevealFrom, RevealPosition, RevealTarget } from "@/lib/graph/types";
+import { newRevealPosition } from "@/lib/graph/utils";
+import { GraphNodeId } from "@/lib/idgen";
+import type { ParseOptions } from "@/lib/parser";
+import type { FunctionKeys } from "@/lib/utils";
 import { includes } from "lodash-es";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -9,6 +11,13 @@ import { createJSONStorage, persist } from "zustand/middleware";
 interface Position {
   line: number;
   column: number;
+}
+
+export interface TreeEdit {
+  treeNodeId: string;
+  target: RevealTarget;
+  value: string;
+  version?: number;
 }
 
 export type CommandMode = "jq" | "json_path";
@@ -26,8 +35,10 @@ export interface StatusState extends Config {
   leftPanelCollapsed: boolean;
   sideNavExpanded?: boolean;
   showPricingOverlay?: boolean;
-  unfoldNodeMap: Record<string, boolean>;
-  unfoldSiblingsNodeMap: Record<string, boolean>;
+  unfoldNodeMap: Record<GraphNodeId, boolean>;
+  unfoldSiblingsNodeMap: Record<GraphNodeId, boolean>;
+  editQueue: Array<TreeEdit>;
+  tableEditModePos?: { row: number; col: number };
 
   incrEditorInitCount: () => number;
   setLeftPanelWidth: (width: number) => void;
@@ -41,14 +52,17 @@ export interface StatusState extends Config {
   setLeftPanelCollapsed: (collapsed: boolean) => void;
   setParseOptions: (options: ParseOptions) => void;
   setRevealPosition: (pos: Partial<RevealPosition>) => void;
-  isNeedReveal: (scene: "editor" | "graph") => boolean;
+  isNeedReveal: (scene: "editor" | "graph" | "table") => boolean;
   setEnableSyncScroll: (enable: boolean) => void;
   setSideNavExpanded: (expanded: boolean) => void;
   setFixSideNav: (fix: boolean) => void;
   setShowPricingOverlay: (show: boolean) => void;
   setIsTouchpad: (isTouchpad: boolean) => void;
-  toggleFoldNode: (nodeId: string) => void;
-  toggleFoldSibingsNode: (nodeId: string) => void;
+  addToEditQueue: (...edits: TreeEdit[]) => void;
+  clearEditQueue: () => void;
+  setTableEditModePos: (pos?: { row: number; col: number }) => void;
+  toggleFoldNode: (id: GraphNodeId) => void;
+  toggleFoldSiblingsNode: (id: GraphNodeId) => void;
   resetFoldStatus: () => void;
 }
 
@@ -58,9 +72,10 @@ const initialStates: Omit<StatusState, FunctionKeys<StatusState>> = {
   editorInitCount: 0,
   cursorPosition: { line: 0, column: 0 },
   selectionLength: 0,
-  revealPosition: { version: 0, treeNodeId: "", type: "node", from: "editor" },
+  revealPosition: newRevealPosition(0),
   unfoldNodeMap: {},
   unfoldSiblingsNodeMap: {},
+  editQueue: [],
 };
 
 export const useStatusStore = create<StatusState>()(
@@ -120,7 +135,7 @@ export const useStatusStore = create<StatusState>()(
       // 2. `setCenter` will change viewport and cause `onViewportChange` to be called.
       setRevealPosition(pos: Partial<RevealPosition>) {
         const oldPos = get().revealPosition;
-        const needUpdate = !(oldPos.type === pos.type && oldPos.treeNodeId === pos.treeNodeId);
+        const needUpdate = !(oldPos.target === pos.target && oldPos.treeNodeId === pos.treeNodeId);
 
         if (needUpdate) {
           set({
@@ -133,19 +148,25 @@ export const useStatusStore = create<StatusState>()(
         }
       },
 
-      isNeedReveal(scene: "editor" | "graph") {
+      isNeedReveal(scene: "editor" | "graph" | "table") {
         const {
           enableSyncScroll,
           revealPosition: { from },
         } = get();
 
-        if (scene === "editor") {
-          return enableSyncScroll ? from !== "editor" : includes(["statusBar", "graphAll"], from);
+        let ok = false;
+
+        if (enableSyncScroll) {
+          ok = !from.startsWith(scene);
+        } else if (scene === "editor") {
+          ok = includes<RevealFrom>(["statusBar"], from);
         } else if (scene === "graph") {
-          return enableSyncScroll ? from !== "graphOthers" : includes(["statusBar", "search", "graphAll"], from);
+          ok = includes<RevealFrom>(["statusBar", "search", "graphButton"], from);
+        } else if (scene === "table") {
+          ok = includes<RevealFrom>(["statusBar", "search"], from);
         }
 
-        return false;
+        return ok;
       },
 
       setEnableSyncScroll(enable: boolean) {
@@ -168,15 +189,29 @@ export const useStatusStore = create<StatusState>()(
         set({ isTouchpad });
       },
 
-      toggleFoldNode(nodeId: string) {
+      addToEditQueue(...edits: TreeEdit[]) {
+        const { editQueue } = get();
+        editQueue.push(...edits);
+        set({ editQueue: [...editQueue] });
+      },
+
+      clearEditQueue() {
+        set({ editQueue: [] });
+      },
+
+      setTableEditModePos(pos?: { row: number; col: number }) {
+        set({ tableEditModePos: pos });
+      },
+
+      toggleFoldNode(id: GraphNodeId) {
         const { unfoldNodeMap } = get();
-        unfoldNodeMap[nodeId] = !unfoldNodeMap[nodeId];
+        unfoldNodeMap[id] = !unfoldNodeMap[id];
         set({ unfoldNodeMap });
       },
 
-      toggleFoldSibingsNode(nodeId: string) {
+      toggleFoldSiblingsNode(id: GraphNodeId) {
         const { unfoldSiblingsNodeMap } = get();
-        unfoldSiblingsNodeMap[nodeId] = !unfoldSiblingsNodeMap[nodeId];
+        unfoldSiblingsNodeMap[id] = !unfoldSiblingsNodeMap[id];
         set({ unfoldSiblingsNodeMap });
       },
 

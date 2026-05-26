@@ -1,4 +1,3 @@
-import { type CSSProperties } from "react";
 import { rootMarker } from "@/lib/idgen";
 import {
   type Tree,
@@ -10,7 +9,9 @@ import {
   getChildCount,
 } from "@/lib/parser";
 import { type XYPosition } from "@xyflow/react";
-import type { EdgeWithData, Graph, GraphNodeStyle, NodeWithData } from "./types";
+import { globalStyle } from "./style";
+import type { EdgeWithData, Graph, NodeWithData } from "./types";
+import { newGraph } from "./utils";
 
 export const config: Readonly<Record<string, any>> = {
   translateMargin: 200,
@@ -23,36 +24,6 @@ export const config: Readonly<Record<string, any>> = {
   imageWidth: 1024,
   imageHeight: 768,
 };
-
-// measured in MainPanel when mounted. The value should remain consistent between the main thread and the web worker.
-export const globalStyle: GraphNodeStyle = {
-  fontWidth: 7.2,
-  padding: 20,
-  borderWidth: 1,
-  kvGap: 20,
-  kvHeight: 18,
-  maxKeyWidth: 300,
-  maxValueWidth: 500,
-  nodeGap: 25,
-  levelGap: 75,
-};
-
-export const initialViewport = { x: globalStyle.nodeGap, y: globalStyle.nodeGap, zoom: 1 };
-
-export function setupGlobalGraphStyle(style: Partial<GraphNodeStyle>) {
-  Object.assign(globalStyle, style);
-}
-
-const highlightColor = "rgb(4, 81, 165)";
-const selectedColor = "rgb(163, 21, 21)";
-
-export const nodeSelectedStyle: CSSProperties = { borderColor: selectedColor };
-export const nodeHighlightStyle: CSSProperties = { borderColor: highlightColor };
-export const edgeHighlightStyle: CSSProperties = { stroke: highlightColor };
-
-export function newGraph(): Graph {
-  return { nodes: [], edges: [] };
-}
 
 /**
  * Generates flow nodes from a tree.
@@ -67,7 +38,7 @@ export function genFlowNodes(tree: Tree): Graph {
     doGenFlowNodes(nodes, edges, tree, tree.root(), "", 0);
   }
 
-  return { nodes, edges };
+  return newGraph({ nodes, edges });
 }
 
 function doGenFlowNodes(
@@ -84,12 +55,15 @@ function doGenFlowNodes(
   let maxKvWidth = 0;
   let maxChildDepth = hasChildren(node) ? 0 : -1;
 
+  // compute max key-value width and max child depth
   tree.mapChildren(node, (child, key, i) => {
     const keyText = genKeyText(key);
     const { text } = genValueAttrs(child);
     const keyWidth = Math.min(computeTextWidth(keyText, globalStyle.fontWidth), globalStyle.maxKeyWidth);
     const valueWidth = Math.min(computeTextWidth(text, globalStyle.fontWidth), globalStyle.maxValueWidth);
     const kvWidth = globalStyle.padding + keyWidth + globalStyle.kvGap + valueWidth + 2 * globalStyle.borderWidth;
+
+    flowNode.data.kvWidthMap[key] = [keyWidth, valueWidth];
     maxKvWidth = Math.max(maxKvWidth, kvWidth);
 
     if (hasChildren(child)) {
@@ -116,6 +90,7 @@ function newFlowNode(node: Node, parentId: string, level: number): NodeWithData 
       depth: 0,
       width: 0,
       height: childrenNum * globalStyle.kvHeight + 2 * globalStyle.borderWidth,
+      kvWidthMap: {},
       parentId,
       targetIds: [],
       render: {
@@ -211,7 +186,7 @@ export class Layouter {
 
 const re = /[\s\w\d\`\~\!\@\#\$\%\^\&\*\(\)\-\=\+\{\}\[\]\\\|\;\:\'\"\<\>\,\.\/\?]/g;
 
-function computeTextWidth(text: string, fontWidth: number) {
+export function computeTextWidth(text: string, fontWidth: number) {
   const single = (text.match(re) || []).length;
   const double = text.length - single;
   return Math.ceil((single + 2 * double) * fontWidth);

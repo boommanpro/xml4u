@@ -1,3 +1,4 @@
+import type { RevealTarget } from "@/lib/graph/types";
 import { getParentId, rootMarker } from "@/lib/idgen";
 import { escape } from "@/lib/worker/command/escape";
 import * as jsonc from "jsonc-parser";
@@ -15,6 +16,21 @@ import {
   hasChildren,
   isRoot,
 } from "./node";
+
+export interface TreeVisitContext<T = any> {
+  node: Node; // The current node being visited.
+  level: number; // The nesting level of the node.
+  key?: string; // The key of the node in its parent.
+  parentCtx?: TreeVisitContext<T>; // The parent node.
+  isLast?: boolean; // Indicates if the node is the last child of its parent.
+  visited?: boolean; // Indicates if the node has been visited.
+  data?: T;
+}
+
+export interface TreeVisitor {
+  pre?(ctx: TreeVisitContext): void;
+  post?(ctx: TreeVisitContext): void;
+}
 
 export interface StringifyOptions extends ParseOptions {
   pure?: boolean;
@@ -42,6 +58,7 @@ export class Tree implements TreeObject {
   nestNodeMap?: Record<string, Node>; // A map from node ID to the root Node of a nested JSON string that has been parsed into its own tree.
   errors?: ContextError[]; // An array of parsing errors.
   version?: number; // A version number for the tree, can be used to track changes.
+  needReset?: boolean; // If true, reset the editor's cursor to the beginning and the graph's viewport.
 
   constructor(text: string = "") {
     this.nodeMap = {};
@@ -87,6 +104,11 @@ export class Tree implements TreeObject {
     return this.text.slice(node.offset, node.offset + node.length);
   }
 
+  getParent(id: string) {
+    const parentId = getParentId(id);
+    return parentId !== undefined ? this.nodeMap[parentId] : undefined;
+  }
+
   getChild(node: Node, key: string): Node | undefined {
     return this.nodeMap[getChildId(node, key)];
   }
@@ -119,12 +141,7 @@ export class Tree implements TreeObject {
     return isRoot(node) || hasChildren(node);
   }
 
-  getGraphNodeId(nodeId: string) {
-    const node = this.node(nodeId);
-    return this.isGraphNode(node) ? nodeId : getParentId(nodeId);
-  }
-
-  findNodeAtOffset(offset: number): { node: Node; type: "node" | "key" | "value" } | undefined {
+  findNodeAtOffset(offset: number): { node: Node; target: RevealTarget } | undefined {
     if (!this.valid()) {
       return undefined;
     }
@@ -167,10 +184,45 @@ export class Tree implements TreeObject {
       return undefined;
     }
 
-    if (this.isGraphNode(node)) {
-      return { node, type: "node" };
+    if (node.offset < offset && offset <= node.offset + node.length) {
+      return { node, target: "value" };
     } else {
-      return { node, type: node.offset < offset && offset <= node.offset + node.length ? "value" : "key" };
+      return { node, target: "key" };
+    }
+  }
+
+  dfs(node: Node, visitor: TreeVisitor) {
+    const stack: TreeVisitContext[] = [{ node, level: 0, isLast: true }];
+
+    while (stack.length > 0) {
+      const ctx = stack.pop()!;
+
+      if (ctx.visited) {
+        visitor.post!(ctx);
+        continue;
+      }
+
+      if (visitor.post) {
+        stack.push({ ...ctx, visited: true });
+      }
+      if (visitor.pre) {
+        visitor.pre(ctx);
+      }
+
+      if (isIterable(ctx.node)) {
+        const keys = getChildrenKeys(ctx.node);
+        for (let i = keys.length - 1; i >= 0; i--) {
+          const childKey = keys[i];
+          const child = this.getChild(ctx.node, childKey)!;
+          stack.push({
+            node: child,
+            key: childKey,
+            parentCtx: ctx,
+            level: ctx.level + 1,
+            isLast: i === keys.length - 1,
+          });
+        }
+      }
     }
   }
 

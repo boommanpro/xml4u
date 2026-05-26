@@ -1,15 +1,12 @@
-import { type Dispatch, type RefObject, type SetStateAction, useCallback, useEffect, useState } from "react";
+import { type Dispatch, type RefObject, type SetStateAction, useEffect } from "react";
 import { ViewMode } from "@/lib/db/config";
-import type { EdgeWithData, NodeWithData } from "@/lib/graph/types";
-import { clearHighlight, highlightElement } from "@/lib/graph/utils";
+import type { EdgeWithData, NodeWithData, RevealFrom } from "@/lib/graph/types";
 import { refreshInterval } from "@/lib/graph/virtual";
 import { useDebounceFn } from "@/lib/hooks";
-import { getParentId } from "@/lib/idgen";
 import { useStatusStore } from "@/stores/statusStore";
-import { getTree } from "@/stores/treeStore";
 import { useOnViewportChange, useReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { keyBy } from "lodash-es";
+import { includes } from "lodash-es";
 import { useResizeObserver } from "usehooks-ts";
 import { useShallow } from "zustand/shallow";
 import { setViewportSize } from "./useVirtualGraph";
@@ -63,7 +60,7 @@ export function useViewportChange(
       } = await window.worker.setGraphViewport(viewport);
 
       if (changed) {
-        console.l("compute virtual graph since the viewport has changed:", viewport, nodes.length, nodes.slice(0, 10));
+        console.l("compute virtual graph since the viewport has changed:", viewport, nodes.length);
         setNodes(nodes);
         setEdges(edges);
       }
@@ -77,7 +74,6 @@ export function useViewportChange(
 }
 
 export function useRevealNode(
-  nodes: NodeWithData[],
   setNodes: Dispatch<SetStateAction<NodeWithData[]>>,
   setEdges: Dispatch<SetStateAction<EdgeWithData[]>>,
 ) {
@@ -89,89 +85,37 @@ export function useRevealNode(
     })),
   );
 
-  const [waitToMeasure, setWaitToMeasure] = useState<string[]>([]);
-  const nodesMap = keyBy(nodes, "id");
-  const isMeasured = waitToMeasure.length && waitToMeasure.every((id) => nodesMap[id]?.measured?.width);
-
   // compute the position and the virtual graph of the reveal node.
   useEffect(() => {
-    if (isNeedReveal && revealPosition.treeNodeId) {
-      (async () => {
-        const r = await window.worker.computeGraphRevealPosition(revealPosition);
-        if (!r) {
+    (async () => {
+      if (isNeedReveal && revealPosition.treeNodeId) {
+        const res = await window.worker.setGraphRevealPosition(revealPosition, getZoom());
+        if (!res) {
+          console.l("skip reveal position in graph:", revealPosition);
           return;
         }
 
-        const { center, viewport } = r;
-        const zoom = getZoom();
-
         const {
           renderable: { nodes, edges },
-          changed,
-        } = await window.worker.setGraphViewport({ ...viewport, zoom });
+          center: { x, y, zoom },
+        } = res;
 
-        console.l("reveal node in graph:", changed, revealPosition, viewport, nodes.length);
-        setWaitToMeasure(nodes.map((node) => node.id));
-        setCenter(center.x, center.y, { duration: 0, zoom });
+        console.l(
+          "reveal position in graph:",
+          revealPosition,
+          res.selected,
+          res.center,
+          res.changed,
+          res.renderable.nodes.length,
+          res.renderable.edges.length,
+        );
+        setNodes(nodes);
+        setEdges(edges);
 
-        if (changed) {
-          setNodes(nodes);
-          setEdges(edges);
+        if (!includes<RevealFrom>(["graph", "graphClick"], revealPosition.from)) {
+          setCenter(x, y, { duration: 0, zoom });
         }
-      })();
-    }
-  }, [revealPosition, isNeedReveal]);
-
-  // highlight the reveal node or search result.
-  // TODO: fix the highlight disappearing when the viewport is changed. This is because the node to be removed from the graph when it hidden in the viewport.
-  useEffect(() => {
-    const { treeNodeId, type } = revealPosition;
-
-    // Every time nodes are set, it will cause the graph to render twice.
-    // We need to highlight after the second render. Otherwise, the highlight will not take effect.
-    // The first render will not set `node.measured`, but the second render will.
-    if (isNeedReveal && isMeasured && treeNodeId) {
-      (async () => {
-        clearHighlight();
-        const isKV = type !== "node";
-        let el: HTMLDivElement;
-
-        if (isKV) {
-          const kvEl = document.querySelector(`.graph-kv[data-tree-id="${treeNodeId}"]`);
-          el = kvEl?.querySelector(`.${type === "value" ? "graph-v" : "graph-k"}`) as HTMLDivElement;
-        } else {
-          el = document.querySelector(`.graph-node[data-tree-id="${treeNodeId}"]`) as HTMLDivElement;
-        }
-
-        if (el) {
-          const graphNodeId = getTree().getGraphNodeId(treeNodeId)!;
-          const { nodes, edges } = await window.worker.toggleGraphNodeSelected(graphNodeId);
-          setNodes(nodes);
-          setEdges(edges);
-          isKV && highlightElement(el);
-        }
-      })();
-
-      setWaitToMeasure([]);
-    }
-  }, [revealPosition, isNeedReveal, isMeasured]);
-}
-
-// clear highlight of search result
-export function useClearSearchHl() {
-  const revealPosition = useStatusStore((state) => state.revealPosition);
-
-  return useCallback(
-    (nodeId?: string) => {
-      const isCurrentNode =
-        revealPosition.type === "node"
-          ? nodeId === revealPosition.treeNodeId
-          : nodeId === getParentId(revealPosition.treeNodeId);
-
-      if (!isCurrentNode) {
-        clearHighlight();
       }
-    },
-    [revealPosition],
-  );
+    })();
+  }, [revealPosition, isNeedReveal]);
 }

@@ -1,14 +1,16 @@
-import { getParentId, join as idJoin, isDescendant, splitParentPointer } from "@/lib/idgen";
+import { getParentId, type GraphNodeId, join as idJoin, isChild, isDescendant, splitParentPointer } from "@/lib/idgen";
 import { type Tree } from "@/lib/parser";
 import { type XYPosition } from "@xyflow/react";
 import { computeSourceHandleOffset } from "./layout";
-import type { RevealPosition, Graph } from "./types";
+import type { RevealPosition, Graph, SubGraph, NodeWithData } from "./types";
 import {
   getAncestor,
   getDescendant,
+  getGraphNodeId,
   highlightEdge,
   highlightNode,
   matchApply,
+  newSubGraph,
   toggleHidden,
   toggleToolbar,
 } from "./utils";
@@ -22,7 +24,7 @@ import { generateVirtualGraph } from "./virtual";
  * @param hide - Whether to hide the node.
  * @returns The updated graph.
  */
-export function toggleNodeHidden(graph: Graph, nodeId: string, handleId?: string, hide?: boolean) {
+export function toggleNodeHidden(graph: Graph, nodeId: GraphNodeId, handleId?: string, hide?: boolean) {
   const prefixId = handleId !== undefined ? idJoin(nodeId, handleId) : undefined;
   const { nodes: descendantNodes, edges: descendantEdges } = getDescendant(graph, nodeId, prefixId);
   const isHide = hide ?? !(descendantNodes[0]?.hidden ?? false);
@@ -36,27 +38,49 @@ export function toggleNodeHidden(graph: Graph, nodeId: string, handleId?: string
  * Toggles the selected state of a node and its ancestors and descendants.
  * @param graph - The graph.
  * @param id - The ID of the node to toggle.
- * @returns The updated graph.
+ * @param selectedKvId - The ID of the selected key-value pair.
+ * @returns The visible subgraph after update.
  */
-export function toggleNodeSelected(graph: Graph, id: string) {
+export function toggleNodeSelected(
+  graph: Graph,
+  id?: GraphNodeId,
+  selectedKvId?: string,
+): SubGraph & { selected?: NodeWithData } {
+  if (!id) {
+    return newSubGraph(graph);
+  }
+
   const node = graph.nodeMap?.[id]!;
   const { nodes: ancestorNodes, edges: ancestorEdges } = getAncestor(graph, id);
   const { nodes: descendantNodes, edges: descendantEdges } = getDescendant(graph, id);
+  const selectedId = selectedKvId ?? id;
+
+  const isNeedHighlight = (nodeIdOrEdgeId: string) =>
+    nodeIdOrEdgeId == selectedId || isDescendant(nodeIdOrEdgeId, id) || isChild(selectedId, nodeIdOrEdgeId);
 
   matchApply(
     graph.edges,
     [...ancestorEdges, ...descendantEdges],
-    (ed) => highlightEdge(ed, true),
+    (ed) => highlightEdge(ed, isNeedHighlight(ed.id)),
     (ed) => highlightEdge(ed, false),
   );
   matchApply(
     graph.nodes,
     [node, ...ancestorNodes, ...descendantNodes],
-    (nd) => toggleToolbar(highlightNode(nd, true, nd.id === id), node),
+    (nd) => toggleToolbar(highlightNode(nd, isNeedHighlight(nd.id), nd.id === id), node),
     (nd) => toggleToolbar(highlightNode(nd, false), node),
   );
 
-  return generateVirtualGraph(graph);
+  if (selectedKvId) {
+    node.data.selectedKvId = selectedKvId;
+  }
+
+  ancestorEdges.forEach((ed) => {
+    const nd = graph.nodeMap?.[ed.source]!;
+    nd.data.selectedKvId = ed.target;
+  });
+
+  return { ...generateVirtualGraph(graph), selected: node };
 }
 
 /**
@@ -77,7 +101,7 @@ export function clearNodeSelected(graph: Graph) {
  * @param fold - Whether to fold the siblings.
  * @returns The updated graph.
  */
-export function triggerFoldSiblings(graph: Graph, nodeId: string, fold: boolean) {
+export function triggerFoldSiblings(graph: Graph, nodeId: GraphNodeId, fold: boolean) {
   const parentId = getParentId(nodeId);
 
   if (parentId) {
@@ -113,7 +137,7 @@ export function computeRevealPosition(
   height: number,
   graph: Graph,
   tree: Tree,
-  { type, treeNodeId }: RevealPosition,
+  { target, treeNodeId }: RevealPosition,
 ):
   | {
       center: XYPosition;
@@ -121,21 +145,21 @@ export function computeRevealPosition(
     }
   | undefined {
   const { parent, lastKey } = splitParentPointer(treeNodeId);
-  const graphNodeId = type === "node" ? treeNodeId : (parent ?? "");
+  const graphNodeId = getGraphNodeId(treeNodeId, target);
   const graphNode = graph.nodeMap?.[graphNodeId];
 
   if (!graphNode) {
-    console.error("computeRevealPosition (node not found):", treeNodeId, type);
+    console.error("computeRevealPosition (node not found):", treeNodeId, target, graphNodeId, graph);
     return;
   }
 
   let xOffset = 0;
   let yOffset = 0;
 
-  if (type !== "node") {
+  if (target !== "graphNode") {
     const i = tree.node(parent!).childrenKeys?.indexOf(lastKey) ?? 0;
     yOffset = computeSourceHandleOffset(i);
-    xOffset = type === "key" ? 0 : graphNode.data.width / 2;
+    xOffset = target === "key" ? 0 : graphNode.data.width / 2;
   }
 
   // must >= Toolbar's height, otherwise Toolbar of the graph node will not in viewport

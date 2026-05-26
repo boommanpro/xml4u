@@ -86,6 +86,10 @@
   "related_features": "相关功能",
   "collapse_hint": "拖动到此处折叠",
   "copy_json_path": "复制 JSON path",
+  "double_click_to_reveal_first_child": "双击聚焦到第一个子节点",
+  "double_click_to_enter_edit_mode": "双击进入编辑模式",
+  "click_to_fold": "点击折叠子节点",
+  "click_to_unfold": "点击展开子节点",
   "Home": {
     "Features": "功能",
     "Pricing": "价格",
@@ -118,7 +122,7 @@
     "landing_title": "超快的 JSON<br></br>可视化与处理",
     "landing_subtitle": "极大提升效率，专为你设计的一站式 JSON 工具。前所未有的可视化、格式化、比较功能！",
     "try_now": "立即尝试",
-    "features_title": "为你量身打造的 JSON 功能",
+    "features_title": "为你精心打造的 JSON 功能",
     "Visualize": "可视化",
     "Visualize_description": "使用图表或表格可视化你的数据，带有交互功能（例如通过 JSON 路径快速定位）。",
     "Compare": "比较",
@@ -218,5 +222,15 @@
   "LoginError": {
     "login_error": "登录失败",
     "go_back_home": "点击返回首页"
+  },
+  "Preview": {
+    "ISO": "ISO",
+    "Local": "本地时间",
+    "Timestamp": "时间戳",
+    "RelativeTime": "距今",
+    "TimeAgo": "{duration} 前",
+    "TimeFromNow": "{duration} 后",
+    "Decoded": "解码",
+    "SignatureLength": "签名长度"
   }
 }

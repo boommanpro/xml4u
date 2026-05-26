@@ -1,29 +1,44 @@
 import { memo } from "react";
-import { computeSourceHandleOffset, genKeyText, genValueAttrs, globalStyle } from "@/lib/graph/layout";
+import { computeSourceHandleOffset, genKeyText, genValueAttrs } from "@/lib/graph/layout";
+import { globalStyle } from "@/lib/graph/style";
 import type { NodeWithData } from "@/lib/graph/types";
-import { rootMarker } from "@/lib/idgen/pointer";
+import { isChild, rootMarker } from "@/lib/idgen/pointer";
 import { getChildrenKeys, hasChildren } from "@/lib/parser/node";
-import { cn } from "@/lib/utils";
+import { useStatusStore } from "@/stores/statusStore";
 import { useTree } from "@/stores/treeStore";
 import { Handle, Position, useReactFlow, type NodeProps } from "@xyflow/react";
 import { filter } from "lodash-es";
-import { SourceHandle, TargetHandle } from "./Handle";
-import Popover from "./Popover";
+import { useShallow } from "zustand/shallow";
+import { TargetHandle } from "./Handle";
+import KV from "./KV";
 import Toolbar from "./Toolbar";
 
 export const ObjectNode = memo(({ id, data }: NodeProps<NodeWithData>) => {
-  const { getNode } = useReactFlow();
+  const { getNode: getGraphNode } = useReactFlow();
   const tree = useTree();
-  const node = tree.node(id);
-  const flowNode = getNode(id) as NodeWithData | undefined;
+  const treeNode = tree.node(id);
+  const graphNode = getGraphNode(id) as NodeWithData | undefined;
 
-  if (!node || !flowNode) {
+  const { revealNodeId, revealTarget } = useStatusStore(
+    useShallow((state) => {
+      const { treeNodeId, target: revealTarget } = state.revealPosition;
+      if (treeNodeId === id) {
+        return { revealNodeId: id, revealTarget };
+      } else if (isChild(id, treeNodeId)) {
+        return { revealNodeId: treeNodeId, revealTarget };
+      } else {
+        return { revealNodeId: "", revealTarget };
+      }
+    }),
+  );
+
+  if (!treeNode || !graphNode) {
     return null;
   }
 
-  const width = flowNode.data.width;
-  const childrenNum = getChildrenKeys(node).length;
-  const { kvStart, kvEnd, virtualHandleIndices } = flowNode.data.render;
+  const width = graphNode.data.width;
+  const childrenNum = getChildrenKeys(treeNode).length;
+  const { kvStart, kvEnd, virtualHandleIndices } = graphNode.data.render;
 
   return (
     <>
@@ -35,10 +50,10 @@ export const ObjectNode = memo(({ id, data }: NodeProps<NodeWithData>) => {
         data-tree-id={id}
         style={data.style}
       >
-        {node.id !== rootMarker && <TargetHandle childrenNum={childrenNum} />}
+        {treeNode.id !== rootMarker && <TargetHandle childrenNum={childrenNum} />}
         {kvStart > 0 && <div style={{ width, height: kvStart * globalStyle.kvHeight }} />}
         {filter(
-          tree.mapChildren(node, (child, key, i) => {
+          tree.mapChildren(treeNode, (child, key, i) => {
             if (virtualHandleIndices?.[i]) {
               return (
                 <Handle
@@ -51,18 +66,30 @@ export const ObjectNode = memo(({ id, data }: NodeProps<NodeWithData>) => {
                 />
               );
             } else if (kvStart <= i && i < kvEnd) {
+              const property = treeNode.type === "array" ? i : key;
+              const keyText = genKeyText(property);
+              const keyClassName =
+                typeof property === "number" ? "text-hl-index" : keyText ? "text-hl-key" : "text-hl-empty";
+
+              const kvTreeNodeId = child.id;
+              const hlClassName = revealNodeId === kvTreeNodeId && "search-highlight";
               const { className, text } = genValueAttrs(child);
+
               return (
                 <KV
-                  id={child.id}
+                  id={kvTreeNodeId}
                   key={i}
                   index={i}
-                  property={node.type === "array" ? i : key}
-                  valueClassName={className}
+                  keyText={keyText}
+                  keyClassNames={[keyClassName, (revealTarget === "key" && hlClassName) || ""]}
                   valueText={text}
+                  valueClassNames={[className, (revealTarget === "value" && hlClassName) || ""]}
                   hasChildren={hasChildren(child)}
-                  isChildrenHidden={getNode(child.id)?.hidden ?? false}
+                  isChildrenHidden={getGraphNode(kvTreeNodeId)?.hidden}
+                  selected={data.selectedKvId === kvTreeNodeId}
                   width={width}
+                  keyWidth={graphNode.data.kvWidthMap?.[key]?.[0]}
+                  valueWidth={graphNode.data.kvWidthMap?.[key]?.[1]}
                 />
               );
             } else {
@@ -76,35 +103,6 @@ export const ObjectNode = memo(({ id, data }: NodeProps<NodeWithData>) => {
   );
 });
 ObjectNode.displayName = "ObjectNode";
-
-interface KvProps {
-  id: string;
-  index: number;
-  property: string | number;
-  valueClassName: string;
-  valueText: string;
-  hasChildren: boolean;
-  width: number; // used to avoid width jump when viewport changes
-  isChildrenHidden: boolean;
-}
-
-const KV = memo(({ id, index, property, valueClassName, valueText, hasChildren, width, isChildrenHidden }: KvProps) => {
-  const keyText = genKeyText(property);
-  const keyClass = typeof property === "number" ? "text-hl-index" : keyText ? "text-hl-key" : "text-hl-empty";
-
-  return (
-    <div className="graph-kv" style={{ width }} data-tree-id={id}>
-      <Popover width={width} hlClass={keyClass} text={keyText}>
-        <div className={cn("graph-k", keyClass)}>{keyText}</div>
-      </Popover>
-      <Popover width={width} hlClass={valueClassName} text={valueText}>
-        <div className={cn("graph-v", valueClassName)}>{valueText}</div>
-      </Popover>
-      {hasChildren && <SourceHandle id={keyText} indexInParent={index} isChildrenHidden={isChildrenHidden} />}
-    </div>
-  );
-});
-KV.displayName = "KV";
 
 export const RootNode = memo(({ id, data }: NodeProps<NodeWithData>) => {
   const tree = useTree();

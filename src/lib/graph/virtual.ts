@@ -1,8 +1,9 @@
-import { globalStyle } from "@/lib/graph/layout";
-import type { NodeWithData, GraphVirtual, Graph, EdgeWithData } from "@/lib/graph/types";
+import { globalStyle } from "@/lib/graph/style";
+import type { NodeWithData, GraphVirtual, Graph, EdgeWithData, SubGraph } from "@/lib/graph/types";
 import { type Viewport, type Rect } from "@xyflow/react";
 import { getOverlappingArea } from "@xyflow/system";
 import { filter } from "lodash-es";
+import { newSubGraph } from "./utils";
 
 export const refreshInterval = 30;
 const smoothPaddingGap = 200;
@@ -25,9 +26,9 @@ export default function computeVirtualGraph(
   width: number,
   height: number,
   viewport: Viewport,
-): { renderable: Graph; changed: boolean } {
+): { renderable: SubGraph; changed: boolean } {
   if (graph.nodes.length <= minVirtualizeNodeNum) {
-    return { renderable: graph, changed: false };
+    return { renderable: newSubGraph(graph), changed: false };
   }
 
   if (width <= 0 || height <= 0 || viewport.zoom <= 0) {
@@ -40,8 +41,11 @@ export default function computeVirtualGraph(
 
   const oldRenderMeta = graph.virtual;
   const viewportRect = getRenderRect(viewport, width, height);
-  const { nodes } = computeRealSubgraph(viewportRect, graph);
+
+  const { virtual, nodes } = computeRealSubgraph(viewportRect, graph);
   let changed = computeRealKV(viewportRect, nodes);
+  graph.virtual = virtual;
+
   virtualize(graph);
   const renderable = generateVirtualGraph(graph);
   changed = changed || isSubgraphChanged(oldRenderMeta, graph.virtual);
@@ -53,9 +57,9 @@ export default function computeVirtualGraph(
  * Computes the real subgraph, which consists of nodes and edges that are currently visible in the viewport.
  * @param viewportRect - The rectangle representing the current viewport.
  * @param graph - The full graph data.
- * @returns The visible subgraph.
+ * @returns The visible subgraph with virtual metadata containing visibility flags and virtual node information.
  */
-function computeRealSubgraph(viewportRect: Rect, graph: Graph): Graph {
+function computeRealSubgraph(viewportRect: Rect, graph: Graph): SubGraph & { virtual: GraphVirtual } {
   const isInViewport = (rect: Rect) => getOverlappingArea(rect, viewportRect) > 0;
   const isNodeInViewport = (node: NodeWithData) =>
     isInViewport({
@@ -81,14 +85,15 @@ function computeRealSubgraph(viewportRect: Rect, graph: Graph): Graph {
   nodes.forEach((nd) => (realNodeIds[nd.id] = true));
   edges.forEach((ed) => (realEdgeIds[ed.id] = true));
 
-  graph.virtual = {
+  const virtual = {
     realNodeIds,
     realEdgeIds,
     omitEdgeIds: {},
     virtualSourceNodeIds: {},
     virtualTargetNodeIds: {},
   };
-  return { nodes, edges };
+
+  return { ...newSubGraph({ nodes, edges }), virtual };
 }
 
 /**
@@ -141,17 +146,16 @@ function virtualize(graph: Graph) {
     const { kvStart, kvEnd } = realSourceNode?.data?.render ?? { kvStart: -1, kvEnd: -1 };
     const isVirtualSourceHandle = !(realSourceNode && kvStart <= sourceHandleIndex && sourceHandleIndex < kvEnd);
 
+    if (!realSourceNode && isVirtualSourceHandle) {
+      virtualSourceNodeIds![sourceId] = true;
+    }
+
     // Case 1: Both the target node and the source handle are in the viewport.
     if (realTargetNode && !isVirtualSourceHandle) {
       return;
       // Case 2: The target node is in the viewport, but the source handle is not.
     } else if (realTargetNode && isVirtualSourceHandle) {
       const sourceNode = realSourceNode ?? nodeMap[sourceId];
-
-      if (!realSourceNode) {
-        virtualSourceNodeIds![sourceId] = true;
-      }
-
       sourceNode.data.render.virtualHandleIndices[sourceHandleIndex] = true;
       // Case 3: The source handle is in the viewport, but the target node is not.
     } else if (!realTargetNode && !isVirtualSourceHandle) {
@@ -220,9 +224,9 @@ function isSubgraphChanged(oldVirtual: GraphVirtual | undefined, newVirtual: Gra
  * @param graph - The full graph with virtualization metadata.
  * @returns The renderable graph containing only the elements to be displayed.
  */
-export function generateVirtualGraph(graph: Graph): Graph {
+export function generateVirtualGraph(graph: Graph): SubGraph {
   if (!graph.virtual) {
-    return graph;
+    return newSubGraph(graph);
   }
 
   const { realNodeIds, realEdgeIds, omitEdgeIds, virtualSourceNodeIds, virtualTargetNodeIds } = graph.virtual;
@@ -233,7 +237,7 @@ export function generateVirtualGraph(graph: Graph): Graph {
   const edges =
     (filter(Object.keys(realEdgeIds).map((id) => !omitEdgeIds?.[id] && graph.edgeMap![id])) as EdgeWithData[]) ?? [];
 
-  return { nodes, edges };
+  return newSubGraph({ nodes, edges });
 }
 
 function newVirtualSourceNode(node: NodeWithData): NodeWithData {
@@ -247,6 +251,7 @@ function newVirtualSourceNode(node: NodeWithData): NodeWithData {
       depth: 0,
       width: node.data.width,
       height: node.data.height,
+      kvWidthMap: {},
       parentId: "",
       targetIds: [],
       render: {
@@ -274,6 +279,7 @@ function newVirtualTargetNode(node: NodeWithData): NodeWithData {
       depth: 0,
       width: 1,
       height: 1,
+      kvWidthMap: {},
       parentId: "",
       targetIds: [],
       render: {

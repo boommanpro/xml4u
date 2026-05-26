@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ViewMode } from "@/lib/db/config";
-import { config, initialViewport } from "@/lib/graph/layout";
+import { config } from "@/lib/graph/layout";
 import type { EdgeWithData, NodeWithData } from "@/lib/graph/types";
 import { useStatusStore } from "@/stores/statusStore";
-import { useTreeVersion } from "@/stores/treeStore";
+import { useTreeMeta } from "@/stores/treeStore";
 import { useUserStore } from "@/stores/userStore";
 import { useEdgesState, useNodesState, useReactFlow } from "@xyflow/react";
 import { XYPosition } from "@xyflow/react";
@@ -14,17 +14,18 @@ import { useShallow } from "zustand/shallow";
 const viewportSize: [number, number] = [0, 0];
 
 export default function useVirtualGraph() {
-  const treeVersion = useTreeVersion();
+  const { version: treeVersion, needReset } = useTreeMeta();
+  // Prevent the graph from being re-rendered when switching to other tabs
+  const [renderedVersion, setRenderedVersion] = useState(-1);
   // nodes and edges are not all that are in the graph, but rather the ones that will be rendered.
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeWithData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<EdgeWithData>([]);
-
   const translateExtentRef = useRef<[[number, number], [number, number]]>([
     [-config.translateMargin, -config.translateMargin],
     [config.translateMargin, config.translateMargin],
   ]);
 
-  const { setViewport, getZoom } = useReactFlow();
+  const { setViewport } = useReactFlow();
   const { count, usable } = useUserStore(
     useShallow((state) => ({
       count: state.count,
@@ -40,7 +41,7 @@ export default function useVirtualGraph() {
   );
 
   useEffect(() => {
-    if (!(window.worker && isGraphView)) {
+    if (!(window.worker && isGraphView) || renderedVersion === treeVersion) {
       console.l("skip graph render:", isGraphView, treeVersion);
       return;
     }
@@ -55,12 +56,17 @@ export default function useVirtualGraph() {
       const {
         graph: { levelMeta },
         renderable: { nodes, edges },
-      } = await window.worker.createGraph();
+        viewport,
+      } = await window.worker.createGraph(needReset);
 
       setNodes(nodes);
       setEdges(edges);
-      setViewport({ ...initialViewport, zoom: getZoom() });
-      resetFoldStatus();
+      setRenderedVersion(treeVersion);
+
+      if (needReset) {
+        setViewport(viewport);
+        resetFoldStatus();
+      }
 
       const [w, h] = viewportSize;
       const px = Math.max(config.translateMargin, w / 2);
@@ -74,18 +80,10 @@ export default function useVirtualGraph() {
         [maxX + px, maxY + py],
       ];
 
-      console.l(
-        "create a new graph:",
-        treeVersion,
-        translateExtentRef.current,
-        nodes.length,
-        edges.length,
-        nodes.slice(0, 10),
-        edges.slice(0, 10),
-      );
+      console.l("create a new graph:", treeVersion, translateExtentRef.current, nodes.length, edges.length);
       nodes.length > 0 && count("graphModeView");
     })();
-  }, [usable, isGraphView, treeVersion]);
+  }, [usable, isGraphView, treeVersion, needReset]);
 
   return {
     nodes,

@@ -76,7 +76,7 @@ interface PricingProps {
   className?: string;
 }
 
-export default function PricingTemp({ hideTitle, className }: PricingProps) {
+function PricingTemp({ hideTitle, className }: PricingProps) {
   const t = useTranslations("Pricing");
 
   return (
@@ -94,7 +94,7 @@ export default function PricingTemp({ hideTitle, className }: PricingProps) {
 }
 
 // TODO: change to charge by usage
-function Pricing({ hideTitle, className }: PricingProps) {
+export default function Pricing({ hideTitle, className }: PricingProps) {
   const t = useTranslations("Pricing");
 
   return (
