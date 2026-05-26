@@ -1,6 +1,6 @@
 import "@/app/globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { env, isCN } from "@/lib/env";
+import { env } from "@/lib/env";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { ThemeProvider } from "next-themes";
