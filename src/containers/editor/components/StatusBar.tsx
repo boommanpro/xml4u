@@ -114,9 +114,12 @@ function ParseErrorMsg({ kind }: ParseErrorMsgProps) {
     return null;
   }
 
-  const { offset, length, context } = tree.errors![0];
+  const error = tree.errors![0];
+  const context = error.context ?? ["", "", ""];
   const [left, middle, right] = context;
-  const { startLineNumber, startColumn } = editor?.range(offset, length)!;
+  const rangeInfo = editor?.range(error.offset, error.length);
+  if (!rangeInfo) return null;
+  const { startLineNumber, startColumn } = rangeInfo;
   const msg = t("parse error", { startLineNumber, startColumn });
 
   return (

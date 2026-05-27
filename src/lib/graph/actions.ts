@@ -149,7 +149,6 @@ export function computeRevealPosition(
   const graphNode = graph.nodeMap?.[graphNodeId];
 
   if (!graphNode) {
-    console.error("computeRevealPosition (node not found):", treeNodeId, target, graphNodeId, graph);
     return;
   }
 

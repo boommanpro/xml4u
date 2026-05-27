@@ -65,7 +65,7 @@
   "fold_siblings": "fold siblings",
   "unfold_siblings": "unfold siblings",
   "reveal position in editor": "reveal position in editor",
-  "convert to JSON": "File will be converted to JSON",
+  "convert to XML": "File will be converted to XML",
   "csv_with_header": "File contains header",
   "CsvErrParseError": "Parse CSV failed",
   "CsvErrMissingQuotes": "Parse CSV failed: missing paired quotes",

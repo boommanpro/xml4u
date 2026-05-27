@@ -1,8 +1,7 @@
 "use client";
 
-import { type ReactNode, type HTMLAttributes } from "react";
+import { type HTMLAttributes } from "react";
 import { Separator } from "@/components/ui/separator";
-import { type CommandMode } from "@/stores/statusStore";
 
 export function Container({ children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
@@ -12,12 +11,9 @@ export function Container({ children, ...props }: HTMLAttributes<HTMLDivElement>
   );
 }
 
-interface ContainerHeaderProps extends HTMLAttributes<HTMLDivElement> {
-  mode?: CommandMode;
-  modeHeaders?: Record<CommandMode, ReactNode>;
-}
+interface ContainerHeaderProps extends HTMLAttributes<HTMLDivElement> {}
 
-export function ContainerHeader({ children, mode, modeHeaders, ...props }: ContainerHeaderProps) {
+export function ContainerHeader({ children, ...props }: ContainerHeaderProps) {
   return (
     <>
       <div className="flex items-center w-full min-h-header px-4" {...props}>

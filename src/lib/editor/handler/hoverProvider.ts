@@ -60,7 +60,7 @@ export class HoverProvider {
       };
     };
 
-    this.monaco.languages.registerHoverProvider("json", {
+    this.monaco.languages.registerHoverProvider("xml", {
       provideHover: previewProvider,
     });
   }

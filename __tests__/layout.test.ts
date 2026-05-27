@@ -1,8 +1,8 @@
 import { genFlowNodes, Layouter } from "@/lib/graph/layout";
-import { parseJSON } from "@/lib/parser/parse";
+import { parseXML } from "@/lib/parser/parse";
 
-function checkNodes(jsonStr: string, nodeNum: number, edgeNum: number) {
-  const tree = parseJSON(jsonStr);
+function checkNodes(xmlStr: string, nodeNum: number, edgeNum: number) {
+  const tree = parseXML(xmlStr);
   const { nodes, edges } = genFlowNodes(tree);
   expect(nodes.length).equals(nodeNum);
   expect(edges.length).equals(edgeNum);
@@ -17,62 +17,39 @@ function checkNodes(jsonStr: string, nodeNum: number, edgeNum: number) {
 }
 
 describe("genFlowNodes", () => {
-  test("value", () => {
-    checkNodes("6", 1, 0);
+  test("simple element with text", () => {
+    checkNodes("<root>6</root>", 1, 0);
   });
 
-  test("empty object", () => {
-    checkNodes("{}", 1, 0);
+  test("self-closing tag", () => {
+    checkNodes("<root />", 1, 0);
   });
 
-  test("empty array", () => {
-    checkNodes("[]", 1, 0);
+  test("element with child", () => {
+    checkNodes("<root><key>value</key></root>", 2, 1);
   });
 
-  test("simple object", () => {
+  test("element with nested object", () => {
     checkNodes(
-      `{
-  "int64": 12345678987654321,
-  "key": "value",
-}`,
-      1,
-      0,
+      "<root><key>value</key><inner><a>1</a><b>2</b></inner></root>",
+      3,
+      2,
     );
   });
 
-  test("object inside object", () => {
+  test("element with array", () => {
     checkNodes(
-      `{
-  "int64": 12345678987654321,
-  "key": "value",
-  "array": {"a": 1, "b": 2}
-}`,
+      "<root><item>1</item><item>2</item></root>",
+      3,
+      2,
+    );
+  });
+
+  test("element with attribute and child", () => {
+    checkNodes(
+      '<root id="1"><name>test</name></root>',
       2,
       1,
     );
-  });
-
-  test("array inside object", () => {
-    checkNodes(
-      `{
-  "int64": 12345678987654321,
-  "key": "value",
-  "array": [12345678987654321, 0.1234567891111111111]
-}`,
-      2,
-      1,
-    );
-  });
-
-  test("simple array", () => {
-    checkNodes("[12345678987654321, 0.1234567891111111111]", 1, 0);
-  });
-
-  test("object inside array", () => {
-    checkNodes('[{"a": 1}, {"b": 2}]', 3, 2);
-  });
-
-  test("array inside array", () => {
-    checkNodes("[[1, 1], [2, 2]]", 3, 2);
   });
 });

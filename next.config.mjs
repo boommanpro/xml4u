@@ -21,7 +21,7 @@ let assetPrefix = "";
 let basePath = "";
 
 // 去掉 `<owner>/`
-const repo = "json4u";
+const repo = "xml4u";
 
 assetPrefix = `/${repo}/`;
 basePath = `/${repo}`;

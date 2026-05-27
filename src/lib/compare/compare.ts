@@ -4,12 +4,12 @@ import { histogramDiff } from "./histogram";
 import { arrayDiff, MaxEditLength, myersDiff } from "./myers";
 
 /**
- * Compares two JSON trees and returns an array of difference pairs.
- * @param ltree - The left JSON tree.
- * @param rtree - The right JSON tree.
+ * Compares two XML trees and returns an array of difference pairs.
+ * @param ltree - The left XML tree.
+ * @param rtree - The right XML tree.
  * @returns An array of difference pairs.
  */
-export function compareJSON(ltree: Tree, rtree: Tree): DiffPair[] {
+export function compareXML(ltree: Tree, rtree: Tree): DiffPair[] {
   const Diff = (node: Node, type: DiffType, includeBound: boolean = true) => {
     return includeBound ? newDiff(node.boundOffset, node.boundLength, type) : newDiff(node.offset, node.length, type);
   };

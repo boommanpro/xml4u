@@ -27,7 +27,12 @@ export function useRevealNode(
           return;
         }
 
-        const { x, y } = tableGrid.grid[res.row][res.col];
+        const row = tableGrid.grid?.[res.row];
+        if (!row || !row[res.col]) {
+          console.l("skip reveal position in table: grid cell not found", revealPosition);
+          return;
+        }
+        const { x, y } = row[res.col];
         scrollTo(virtualizer, containerRef, x, y);
       }
     })();

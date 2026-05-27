@@ -44,14 +44,14 @@ export function cn(...inputs: ClassValue[]) {
 export function getAssetPath(path: string): string {
   // 确保路径以/开头，但不以/结尾
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  // 如果路径以/json4u或/json4u/开头，则不拼接前缀
-  if (normalizedPath.startsWith("/json4u") || normalizedPath.startsWith("/json4u/")) {
+  // 如果路径以/xml4u或/xml4u/开头，则不拼接前缀
+  if (normalizedPath.startsWith("/xml4u") || normalizedPath.startsWith("/xml4u/")) {
     return normalizedPath;
   }
   // 在客户端获取basePath
   // Next.js会在window上设置__NEXT_DATA__对象，其中包含basePath
   // @ts-ignore
-  const basePath = "/json4u";
+  const basePath = "/xml4u";
   return basePath + normalizedPath;
 }
 
@@ -121,7 +121,7 @@ function genDownloadFileName(suffix: string) {
   const hours = String(now.getHours()).padStart(2, "0");
   const minutes = String(now.getMinutes()).padStart(2, "0");
   const seconds = String(now.getSeconds()).padStart(2, "0");
-  return `json4u-${hours}${minutes}${seconds}.${suffix.toLowerCase()}`;
+  return `xml4u-${hours}${minutes}${seconds}.${suffix.toLowerCase()}`;
 }
 
 const pathRegex = /(?:(?:file|https?|global code|[^@]+)@)?(?:file:)?((?:\/[^:/]+){2,})(?::(\d+))?(?::(\d+))?/;

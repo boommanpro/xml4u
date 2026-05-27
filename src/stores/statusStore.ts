@@ -20,7 +20,7 @@ export interface TreeEdit {
   version?: number;
 }
 
-export type CommandMode = "jq" | "json_path";
+export type CommandMode = never;
 
 export interface StatusState extends Config {
   _hasHydrated: boolean;

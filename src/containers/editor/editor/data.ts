@@ -1,49 +1,25 @@
-const example = `{
-  "Aidan Gillen": {
-      "array": [
-          "Game of Thron\\"es",
-          "The Wire"
-      ],
-      "string": "some string",
-      "int": 2,
-      "aboolean": true,
-      "boolean": true,
-      "null": null,
-      "a_null": null,
-      "another_null": "null check",
-      "object": {
-          "foo": "bar",
-          "object1": {
-              "new prop1": "new prop value"
-          },
-          "object2": {
-              "new prop1": "new prop value"
-          },
-          "object3": {
-              "new prop1": "new prop value"
-          },
-          "object4": {
-              "new prop1": "new prop value"
-          }
-      }
-  },
-  "Amy Ryan": {
-      "one": "In Treatment",
-      "two": "The Wire"
-  },
-  "Annie Fitzgerald": [
-      "Big Love",
-      "True Blood"
-  ],
-  "Anwan Glover": [
-      "Treme",
-      "The Wire"
-  ],
-  "Alexander Skarsgard": [
-      "Generation Kill",
-      "True Blood"
-  ],
-  "Clarke Peters": null
-}`;
+const example = `<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+  <book id="bk101">
+    <author>Aidan Gillen</author>
+    <title>Game of Thrones</title>
+    <genre>Fantasy</genre>
+    <price>29.99</price>
+    <publish_date>2000-10-01</publish_date>
+    <description>A fantasy epic</description>
+  </book>
+  <book id="bk102">
+    <author>Amy Ryan</author>
+    <title>In Treatment</title>
+    <genre>Drama</genre>
+    <price>19.99</price>
+  </book>
+  <book id="bk103">
+    <author>Annie Fitzgerald</author>
+    <title>Big Love</title>
+    <genre>Drama</genre>
+    <price>24.99</price>
+  </book>
+</catalog>`;
 
 export { example };

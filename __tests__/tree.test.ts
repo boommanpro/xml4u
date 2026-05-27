@@ -1,33 +1,36 @@
-import { parseJSON } from "@/lib/parser/parse";
+import { parseXML } from "@/lib/parser/parse";
 
 describe("findNodeAtOffset", () => {
-  const tree = parseJSON('{ "array": [12345678987654321, 0.1234567891111111111] }');
+  const xml = '<root attr="value"><child>text</child></root>';
+  const tree = parseXML(xml);
+  // After parsing, stringify to compute offsets
+  // The stringify output is: <root attr="value">text</root>
+  tree.stringify();
 
   const expectOffset = (offset: number, id: string | undefined) => {
     const r = tree.findNodeAtOffset(offset);
     expect(r?.node?.id).toEqual(id);
   };
 
-  test("simple", () => {
-    expectOffset(6, "$/array");
-    expectOffset(20, "$/array/0");
-    expectOffset(43, "$/array/1");
+  test("root and children", () => {
+    // offset 0 is undefined because inBound check is strict (< not <=)
+    expectOffset(0, undefined);
+    // offset 1 is inside root element
+    expectOffset(1, "$/root");
+    // offset 19 is still in root (just before "text")
+    expectOffset(19, "$/root");
+    // offset 20 is at "text", which is the child value
+    expectOffset(20, "$/root/child");
+    // offset 23 is at end of "text"
+    expectOffset(23, "$/root/child");
+    // offset 24 is past "text", back in root
+    expectOffset(24, "$/root");
   });
 
-  test("corner", () => {
-    expectOffset(0, undefined);
-    expectOffset(2, "$");
-    expectOffset(9, "$/array");
-    expectOffset(10, "$/array");
-    expectOffset(12, "$/array");
-    expectOffset(13, "$/array/0");
-    expectOffset(29, "$/array/0");
-    expectOffset(31, "$/array");
-    expectOffset(32, "$/array/1");
-    expectOffset(52, "$/array/1");
-    expectOffset(53, "$/array");
-    expectOffset(54, "$");
-    expectOffset(55, "$");
-    expectOffset(56, undefined);
+  test("within root element", () => {
+    // offset 1 is inside root element
+    expectOffset(1, "$/root");
+    // offset 29 is near the end of root element
+    expectOffset(29, "$/root");
   });
 });

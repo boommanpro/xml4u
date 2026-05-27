@@ -3,12 +3,12 @@ import { setupGlobalGraphStyle } from "@/lib/graph/style";
 import { setupGlobalTableStyle } from "@/lib/table/style";
 import * as Comlink from "comlink";
 import { compareText, compareTree } from "./command/compare";
-import { csv2json, json2csv } from "./command/csv";
+import { csv2xml, xml2csv } from "./command/csv";
 import { escape, unescape } from "./command/escape";
 import { jsonPath } from "./command/jsonPath";
 import { parseAndFormat } from "./command/parse";
 import { pythonDictToJSON } from "./command/pythonDictToJSON";
-import { urlToJSON } from "./command/urlToJSON";
+import { urlToXML } from "./command/urlToJSON";
 import {
   clearGraphNodeSelected,
   createGraph,
@@ -30,9 +30,9 @@ const worker = {
   escape,
   unescape,
   pythonDictToJSON,
-  urlToJSON,
-  csv2json,
-  json2csv,
+  urlToXML,
+  csv2xml,
+  xml2csv,
   jsonPath,
   setupGlobalGraphStyle,
   setupGlobalTableStyle,

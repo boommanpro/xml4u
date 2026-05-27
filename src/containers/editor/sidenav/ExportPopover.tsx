@@ -11,11 +11,11 @@ import { useTranslations } from "next-intl";
 import BasePopover from "./BasePopover";
 import { FileTypeSelect } from "./FileTypeSelect";
 
-type FileType = "JSON" | "CSV";
+type FileType = "XML" | "CSV";
 
 export default function ExportPopover() {
   const t = useTranslations();
-  const [fileType, setFileType] = useState<FileType>("JSON");
+  const [fileType, setFileType] = useState<FileType>("XML");
   const { onClickPreview, onClickDownload } = useOnClickButton(fileType);
 
   return (
@@ -23,7 +23,7 @@ export default function ExportPopover() {
       <span>{t("export to")}</span>
       <FileTypeSelect fileType={fileType} setFileType={setFileType} />
       <div className="flex ml-auto gap-2">
-        {fileType !== "JSON" && (
+        {fileType !== "XML" && (
           <Button variant="outline" onClick={onClickPreview}>
             {t("preview")}
           </Button>
@@ -82,7 +82,7 @@ async function convert(
 
   if (fileType === "CSV") {
     const treeObject = main.tree.toObject();
-    r = await main.worker().json2csv(treeObject);
+    r = await main.worker().xml2csv(treeObject);
   }
 
   if (r.errorKey) {

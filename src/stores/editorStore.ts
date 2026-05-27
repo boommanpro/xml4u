@@ -84,24 +84,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
         return parse;
       },
     },
-    {
-      id: "pythonDictToJSON",
-      run: async () => {
-        const { main } = get();
-        const { parse } = await main!.parseAndSet(await window.worker.pythonDictToJSON(main!.text()));
-        return parse;
-      },
-    },
-    {
-      id: "urlToJson",
-      run: async () => {
-        const { main } = get();
-        const { text, parse } = await window.worker.urlToJSON(main!.text());
-        if (!parse) return parse;
-        const { set } = await main!.parseAndSet(text);
-        return set;
-      },
-    },
+
     {
       id: "compare",
       run: async () => await get().compare(),
@@ -118,14 +101,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
         return true;
       },
     },
-    {
-      id: "show_jq",
-      run: () => getStatusState().setCommandMode("jq"),
-    },
-    {
-      id: "show_json_path",
-      run: () => getStatusState().setCommandMode("json_path"),
-    },
+
   ],
 
   async runCommand(id: MessageKey) {

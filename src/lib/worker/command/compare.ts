@@ -6,5 +6,5 @@ export { compareText } from "@/lib/compare";
 export function compareTree(ltreeObject: TreeObject, rtreeObject: TreeObject) {
   const ltree = Tree.fromObject(ltreeObject);
   const rtree = Tree.fromObject(rtreeObject);
-  return compare.compareJSON(ltree, rtree);
+  return compare.compareXML(ltree, rtree);
 }

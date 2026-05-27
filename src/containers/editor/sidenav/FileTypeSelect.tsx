@@ -1,6 +1,6 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export type FileType = "JSON" | "CSV";
+export type FileType = "XML" | "CSV";
 
 export interface FileTypeSelectProps {
   fileType: FileType;
@@ -15,7 +15,7 @@ export function FileTypeSelect({ fileType, setFileType }: FileTypeSelectProps) {
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectItem value="JSON">{"JSON"}</SelectItem>
+          <SelectItem value="XML">{"XML"}</SelectItem>
           <SelectItem value="CSV">{"CSV"}</SelectItem>
         </SelectGroup>
       </SelectContent>

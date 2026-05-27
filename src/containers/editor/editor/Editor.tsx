@@ -29,7 +29,7 @@ export default function Editor({ kind, ...props }: EditorProps) {
 
   return (
     <MonacoEditor
-      language="json"
+      language="xml"
       loading={<Loading />}
       options={{
         fontSize: 13, // 设置初始字体大小

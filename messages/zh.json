@@ -65,7 +65,7 @@
   "fold_siblings": "折叠兄弟节点",
   "unfold_siblings": "展开兄弟节点",
   "reveal position in editor": "显示在编辑器中的位置",
-  "convert to JSON": "文件将转换成 JSON",
+  "convert to XML": "文件将转换成 XML",
   "csv_with_header": "文件包含表头",
   "CsvErrParseError": "CSV 解析失败",
   "CsvErrMissingQuotes": "CSV 解析失败：缺失配对的引号",

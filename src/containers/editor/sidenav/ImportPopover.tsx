@@ -12,7 +12,7 @@ import { type FileType, FileTypeSelect } from "./FileTypeSelect";
 
 export default function ImportPopover() {
   const t = useTranslations();
-  const [fileType, setFileType] = useState<FileType>("JSON");
+  const [fileType, setFileType] = useState<FileType>("XML");
   const [csvWithHeader, setCsvWithHeader] = useState<boolean>(true);
   const onFile = useOnFile(fileType, { csvWithHeader });
 
@@ -22,7 +22,7 @@ export default function ImportPopover() {
       className="w-96"
       optionsNode={fileType === "CSV" && <CsvOptions checked={csvWithHeader} setChecked={setCsvWithHeader} />}
       extraNode={
-        <FileUploader handleChange={onFile} types={["txt", "json", "csv"]} dropMessageStyle={{ color: "transparent" }}>
+        <FileUploader handleChange={onFile} types={["txt", "xml", "csv"]} dropMessageStyle={{ color: "transparent" }}>
           <div className="flex items-center justify-center border border-dashed hover:cursor-pointer hover:border-rose-400 w-full h-64 mt-2 text-zinc-500">
             <p>{t("drop file")}</p>
           </div>
@@ -31,7 +31,7 @@ export default function ImportPopover() {
     >
       <span className="mr-1">{t("file type")}</span>
       <FileTypeSelect fileType={fileType} setFileType={setFileType} />
-      {fileType !== "JSON" && <span className="ml-auto text-zinc-500">{t("convert to JSON")}</span>}
+      {fileType !== "XML" && <span className="ml-auto text-zinc-500">{t("convert to XML")}</span>}
     </BasePopover>
   );
 }
@@ -74,11 +74,11 @@ function useOnFile(fileType: FileType, options: { csvWithHeader?: boolean }) {
       let r: CsvResult = { text: fileContent };
       console.l("import file:", fileType, fileContent.length, fileContent.slice(0, 20));
 
-      if (fileType !== "JSON") {
+      if (fileType !== "XML") {
         secondary.setTree({ treeObject: new Tree(fileContent).toObject() });
 
         if (fileType === "CSV") {
-          r = await main.worker().csv2json(fileContent, { withHeader: options.csvWithHeader });
+          r = await main.worker().csv2xml(fileContent, { withHeader: options.csvWithHeader });
         }
         // TODO: consider to support yaml
       }

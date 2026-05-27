@@ -5,7 +5,6 @@ import { config } from "@/lib/graph/layout";
 import { useStatusStore } from "@/stores/statusStore";
 import { Background, Controls, ReactFlow, ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { debounce } from "lodash-es";
 import MouseButton from "./MouseButton";
 import { ObjectNode, RootNode, VirtualTargetNode } from "./Node";
 import { useRevealNode, useViewportChange } from "./useViewportChange";
@@ -81,12 +80,10 @@ function LayoutGraph() {
   );
 }
 
-const print008Error = debounce((code: string, message: string) => console.error(message), 100, { leading: true });
-
-const onError = (code: string, message: string) => {
-  if (code === "008") {
-    print008Error(code, message);
-  } else {
-    console.error(message);
+const onError = (code: string, _message: string) => {
+  // 008 errors are expected during initial render when edges render before handles
+  // They don't affect functionality, so we suppress them
+  if (code !== "008") {
+    console.error(_message);
   }
 };

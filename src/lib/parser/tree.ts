@@ -1,7 +1,5 @@
 import type { RevealTarget } from "@/lib/graph/types";
 import { getParentId, rootMarker } from "@/lib/idgen";
-import { escape } from "@/lib/worker/command/escape";
-import * as jsonc from "jsonc-parser";
 import { isEmpty, repeat } from "lodash-es";
 import { union } from "lodash-es";
 import {
@@ -54,8 +52,7 @@ const treeProperties = Object.keys(emptyTree) as (keyof TreeObject)[];
 
 export class Tree implements TreeObject {
   nodeMap: Record<string, Node>; // A map from node ID to the Node object for quick lookup.
-  text: string; // The raw text content of the JSON string.
-  nestNodeMap?: Record<string, Node>; // A map from node ID to the root Node of a nested JSON string that has been parsed into its own tree.
+  text: string; // The raw text content of the XML string.
   errors?: ContextError[]; // An array of parsing errors.
   version?: number; // A version number for the tree, can be used to track changes.
   needReset?: boolean; // If true, reset the editor's cursor to the beginning and the graph's viewport.
@@ -74,9 +71,8 @@ export class Tree implements TreeObject {
     return a;
   }
 
-  static fromObject(treeObject: TreeObject, nestNodeMap?: Record<string, Node>) {
+  static fromObject(treeObject: TreeObject, _nestNodeMap?: Record<string, Node>) {
     const tree = Tree.assign(new Tree(), treeObject);
-    tree.nestNodeMap = nestNodeMap;
     return tree;
   }
 
@@ -147,7 +143,6 @@ export class Tree implements TreeObject {
     }
 
     const inBound = (node: Node) => {
-      // Because cursor-text appears to be on the left side of the character, so (boundLeft, boundRight]
       return node.boundOffset < offset && offset <= node.boundOffset + node.boundLength;
     };
 
@@ -226,18 +221,35 @@ export class Tree implements TreeObject {
     }
   }
 
-  // TODO support pretty format
+  /**
+   * Stringifies a node into XML format.
+   */
   stringifyNode(
     node: Node,
     options: StringifyOptions = {},
     indentLevel: number = 0,
-    offset: number = 0, // the starting offset of the current node in the stringify text.
-    boundOffset: number = 0, // the starting offset of the current node's bound in the stringify text.
+    offset: number = 0,
+    boundOffset: number = 0,
     genTabs: ReturnType<typeof getGenTabsFn> = getGenTabsFn(options.tabWidth || 2),
+    tagName?: string,
   ): string {
     if (!isIterable(node)) {
-      const stringified = getRawValue(node)!;
+      // Leaf node
+      const stringified = escapeXMLText(String(node.value ?? ""));
 
+      if (tagName) {
+        // Leaf node with a tag name = XML element with text content
+        const result = `<${tagName}>${stringified}</${tagName}>`;
+        if (!options.pure) {
+          node.length = result.length;
+          node.offset = offset;
+          node.boundOffset = boundOffset ?? node.offset;
+          computeAndSetBoundLength(node);
+        }
+        return result;
+      }
+
+      // Leaf node without tag name = raw text content (e.g. #text inside an element)
       if (!options.pure) {
         node.length = stringified.length;
         node.offset = offset;
@@ -248,51 +260,124 @@ export class Tree implements TreeObject {
       return stringified;
     }
 
-    // for array or object, the bound width is equal to the node width
+    // For array or object, the bound width is equal to the node width
     if (!options.pure) {
       node.boundOffset = boundOffset ?? 0;
       node.offset = offset;
     }
 
     const isFormat = options?.format === true;
-    const isObject = node.type === "object";
-    let stringified = isObject ? "{" : "[";
+    const isMinify = options?.format === "minify";
 
-    const keys = getChildrenKeys(node);
+    if (node.type === "array") {
+      // Array - repeat each child with the tag name
+      let stringified = "";
+      const keys = getChildrenKeys(node);
 
-    if (isObject) {
-      if (options?.sort === "asc") {
-        keys.sort();
-      } else if (options?.sort === "desc") {
-        keys.sort().reverse();
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const child = this.getChild(node, key)!;
+
+        if (isFormat && i > 0) {
+          stringified += "\n" + genTabs(indentLevel);
+        }
+
+        const childBoundOffset = offset + stringified.length;
+        stringified += this.stringifyNode(
+          child,
+          options,
+          indentLevel,
+          offset + stringified.length,
+          childBoundOffset,
+          genTabs,
+          tagName,
+        );
       }
+
+      if (!options.pure) {
+        node.length = stringified.length;
+        computeAndSetBoundLength(node);
+      }
+
+      return stringified;
     }
 
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const child = this.getChild(node, key)!;
+    // Object node = XML element
+    const tag = tagName ?? "root";
+    const keys = getChildrenKeys(node);
+
+    // Separate attributes, text, and child elements
+    const attrKeys = keys.filter((k) => k.startsWith("@"));
+    const textKeys = keys.filter((k) => k === "#text" || k === "#cdata");
+    const childKeys = keys.filter((k) => !k.startsWith("@") && k !== "#text" && k !== "#cdata");
+
+    if (options?.sort === "asc") {
+      childKeys.sort();
+    } else if (options?.sort === "desc") {
+      childKeys.sort().reverse();
+    }
+
+    // Build opening tag with attributes
+    let stringified = `<${tag}`;
+    for (const attrKey of attrKeys) {
+      const attrNode = this.getChild(node, attrKey)!;
+      const attrName = attrKey.substring(1); // Remove "@" prefix
+      stringified += ` ${attrName}="${escapeXMLAttr(String(attrNode.value ?? ""))}"`;
+    }
+
+    if (childKeys.length === 0 && textKeys.length === 0) {
+      // Self-closing tag
+      stringified += " />";
+      if (!options.pure) {
+        node.length = stringified.length;
+        computeAndSetBoundLength(node);
+      }
+      return stringified;
+    }
+
+    stringified += ">";
+
+    // Text content
+    for (const textKey of textKeys) {
+      const textNode = this.getChild(node, textKey)!;
+      let textValue = String(textNode.value ?? "");
+      // When formatting, trim text content to avoid extra whitespace/newlines
+      // combining with formatting newlines
+      if (isFormat && childKeys.length > 0) {
+        textValue = textValue.trim();
+      }
+      stringified += escapeXMLText(textValue);
+    }
+
+    // Child elements
+    if (childKeys.length > 0) {
+      for (let i = 0; i < childKeys.length; i++) {
+        const childKey = childKeys[i];
+        const child = this.getChild(node, childKey)!;
+
+        if (isFormat) {
+          stringified += "\n" + genTabs(indentLevel + 1);
+        }
+
+        const childBoundOffset = offset + stringified.length;
+        const childOffset = offset + stringified.length;
+        stringified += this.stringifyNode(
+          child,
+          options,
+          indentLevel + 1,
+          childOffset,
+          childBoundOffset,
+          genTabs,
+          childKey,
+        );
+      }
 
       if (isFormat) {
-        stringified += "\n" + genTabs(indentLevel + 1);
-      }
-
-      const childBoundOffset = offset + stringified.length;
-      if (isObject) {
-        const keyText = escape(key);
-        stringified += `"${keyText}":${isFormat ? " " : ""}`;
-      }
-      const childOffset = offset + stringified.length;
-
-      stringified += this.stringifyNode(child, options, indentLevel + 1, childOffset, childBoundOffset, genTabs);
-
-      if (i < keys.length - 1) {
-        stringified += ",";
-      } else if (isFormat) {
         stringified += "\n" + genTabs(indentLevel);
       }
     }
 
-    stringified += isObject ? "}" : "]";
+    stringified += `</${tag}>`;
 
     if (!options.pure) {
       node.length = stringified.length;
@@ -304,46 +389,27 @@ export class Tree implements TreeObject {
 
   stringify(options: StringifyOptions = {}): string {
     const root = this.root();
-    this.text = this.stringifyNode(root, options);
+    if (!root) {
+      this.text = "";
+      return this.text;
+    }
+
+    // The root is a virtual container; stringify its children
+    const keys = getChildrenKeys(root);
+    let text = "";
+    const genTabs = getGenTabsFn(options.tabWidth || 2);
+
+    for (const key of keys) {
+      const child = this.getChild(root, key)!;
+      text += this.stringifyNode(child, options, 0, text.length, text.length, genTabs, key);
+      if (options.format === true) {
+        text += "\n";
+      }
+    }
+
+    this.text = text.trimEnd();
     root.length = this.text.length;
     return this.text;
-  }
-
-  /**
-   * Stringifies nested JSON sub-trees and applies the changes to the original text.
-   * It replaces the original string literals with their stringified content and updates node offsets and lengths to maintain tree integrity.
-   * @param {StringifyOptions} options - The options to use for stringifying the nested nodes.
-   */
-  stringifyNestNodes(options: StringifyOptions = {}) {
-    let acc = 0;
-    const edits: jsonc.Edit[] = [];
-
-    const fixOffset = (node: Node) => {
-      // fix offset for nest nodes
-      if (this.nestNodeMap?.[node.id]) {
-        const edit = {
-          offset: node.offset,
-          length: node.length,
-          content: this.stringifyNode(node, options, 0, node.offset + acc, node.boundOffset + acc),
-        };
-
-        edits.push(edit);
-        acc += edit.content.length - edit.length;
-      } else {
-        // fix offset for successor node of the nest node
-        node.offset += acc;
-        node.boundOffset += acc;
-
-        // fix length for parent of the nest node
-        const old = acc;
-        this.mapChildren(node, fixOffset);
-        node.length += acc - old;
-        node.boundLength += acc - old;
-      }
-    };
-
-    fixOffset(this.root());
-    this.text = jsonc.applyEdits(this.text, edits).trim();
   }
 
   toJSON(node = this.root()): string | number | boolean | object | any[] | null {
@@ -353,14 +419,36 @@ export class Tree implements TreeObject {
 
     if (node.type === "object") {
       const obj: Record<string, unknown> = {};
-      this.mapChildren(node, (node, key, i) => {
-        obj[key] = this.toJSON(node);
+      this.mapChildren(node, (child, key) => {
+        obj[key] = this.toJSON(child);
       });
       return obj;
     } else {
-      return this.mapChildren(node, (node) => this.toJSON(node));
+      return this.mapChildren(node, (child) => this.toJSON(child));
     }
   }
+}
+
+/**
+ * Escapes text for use in XML content.
+ */
+function escapeXMLText(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/**
+ * Escapes text for use in XML attribute values.
+ */
+function escapeXMLAttr(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 /**

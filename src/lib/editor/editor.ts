@@ -1,7 +1,6 @@
 import type { RevealTarget } from "@/lib/graph/types";
 import { newRevealPosition } from "@/lib/graph/utils";
 import { ParseOptions, Tree } from "@/lib/parser";
-import { escape } from "@/lib/worker/command/escape";
 import { type ParsedTree } from "@/lib/worker/command/parse";
 import { getEditorState } from "@/stores/editorStore";
 import { getStatusState, type TreeEdit } from "@/stores/statusStore";
@@ -183,22 +182,14 @@ export class EditorWrapper {
     }
 
     const edits = nodes.map(({ editTarget, newValue, ...nd }) => {
-      let needQuotationMarks = false;
-      try {
-        JSON.parse(newValue);
-        needQuotationMarks = false;
-      } catch {
-        needQuotationMarks = true;
-      }
-      needQuotationMarks = needQuotationMarks || editTarget === "key";
-      needQuotationMarks = needQuotationMarks && !(newValue.startsWith('"') && newValue.endsWith('"'));
-
+      // For XML, values don't need JSON-style quotation marks
       let text = newValue;
-      if (needQuotationMarks) {
-        text = `"${escape(newValue)}"`;
+      if (editTarget === "key") {
+        // Keys in XML are tag names, no quotes needed
+        text = newValue;
       }
 
-      // Keys include double quotes, so the length needs +2
+      // Keys include tag brackets, so the length calculation differs
       const range =
         editTarget === "key" ? this.range(nd.boundOffset, nd.keyLength + 2) : this.range(nd.offset, nd.length);
       return { text, range };

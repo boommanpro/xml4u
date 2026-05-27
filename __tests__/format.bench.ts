@@ -1,10 +1,10 @@
 import { textFormat } from "@/lib/format/text";
-import { parseJSON } from "@/lib/parser";
+import { parseXML } from "@/lib/parser";
 import { readFile } from "fs/promises";
 import { bench, describe } from "vitest";
 
-const jsonString = await readFile(`${__dirname}/fixtures/complex.txt`, "utf8");
-const tree = parseJSON(jsonString);
+const xmlString = await readFile(`${__dirname}/fixtures/complex.txt`, "utf8");
+const tree = parseXML(xmlString);
 
 describe("format", () => {
   assert(!tree.hasError(), "parse tree failed");
@@ -14,6 +14,6 @@ describe("format", () => {
   });
 
   bench("simple", () => {
-    textFormat(jsonString);
+    textFormat(xmlString);
   });
 });

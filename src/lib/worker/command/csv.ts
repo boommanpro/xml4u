@@ -10,7 +10,7 @@ export interface CsvResult {
   errorKey?: string;
 }
 
-export function csv2json(text: string, options: CsvOptions = {}): CsvResult {
+export function csv2xml(text: string, options: CsvOptions = {}): CsvResult {
   const { data, errors, meta } = Papa.parse(text as any, {
     header: options.withHeader,
     skipEmptyLines: true,
@@ -26,13 +26,14 @@ export function csv2json(text: string, options: CsvOptions = {}): CsvResult {
     error = "ParseError";
   }
 
+  const xml = rowsToXml(data, options.withHeader);
   return {
-    text: JSON.stringify(data),
+    text: xml,
     errorKey: error ? `CsvErr${error}` : undefined,
   };
 }
 
-export function json2csv(treeObject: TreeObject): CsvResult {
+export function xml2csv(treeObject: TreeObject): CsvResult {
   const tree = Tree.fromObject(treeObject);
   const { json, errorKey } = toCsvJSON(tree);
   if (errorKey) {
@@ -43,6 +44,40 @@ export function json2csv(treeObject: TreeObject): CsvResult {
     skipEmptyLines: true,
   });
   return { text };
+}
+
+function rowsToXml(data: any[], withHeader?: boolean): string {
+  const escapeXml = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+
+  const rows: string[] = [];
+
+  if (withHeader && data.length > 0 && typeof data[0] === "object") {
+    for (const row of data) {
+      const children = Object.entries(row as Record<string, string>)
+        .map(([k, v]) => `<${k}>${escapeXml(String(v ?? ""))}</${k}>`)
+        .join("");
+      rows.push(`<row>${children}</row>`);
+    }
+  } else {
+    for (const row of data) {
+      if (Array.isArray(row)) {
+        const children = row
+          .map((v) => `<col>${escapeXml(String(v ?? ""))}</col>`)
+          .join("");
+        rows.push(`<row>${children}</row>`);
+      } else {
+        rows.push(`<row><col>${escapeXml(String(row ?? ""))}</col></row>`);
+      }
+    }
+  }
+
+  return `<rows>${rows.join("")}</rows>`;
 }
 
 function toCsvJSON(tree: Tree): { json?: any; errorKey?: string } {

@@ -58,6 +58,6 @@ export class InlayHintsProvider {
       },
     };
 
-    this.monaco.languages.registerInlayHintsProvider("json", provider);
+    this.monaco.languages.registerInlayHintsProvider("xml", provider);
   }
 }

@@ -1,7 +1,7 @@
 import { getConfig } from "@/lib/db/config";
-import { parseJSON } from "@/lib/parser";
+import { parseXML } from "@/lib/parser";
 
-export async function urlToJSON(text: string): Promise<{ text: string; parse: boolean }> {
+export async function urlToXML(text: string): Promise<{ text: string; parse: boolean }> {
   if (!text.trim()) {
     return { text, parse: false };
   }
@@ -9,7 +9,7 @@ export async function urlToJSON(text: string): Promise<{ text: string; parse: bo
   const options = (await getConfig()).parseOptions;
 
   try {
-    const tree = parseJSON(mapStringify(urlToMap(text)), options);
+    const tree = parseXML(mapStringify(urlToMap(text)), options);
     return { text: tree.text, parse: tree.valid() };
   } catch (e) {
     return { text, parse: false };
@@ -18,7 +18,7 @@ export async function urlToJSON(text: string): Promise<{ text: string; parse: bo
 
 export function urlToMap(s: string, maxLevel?: number): Map<string, string | Map<string, any>> {
   const isFullURI = isURI(s);
-  const u = new URL(isFullURI ? s : `http://json4u.com/${s.replace(/^\//, "")}`);
+  const u = new URL(isFullURI ? s : `http://xml4u.com/${s.replace(/^\//, "")}`);
   const m = new Map();
 
   if (isFullURI) {
@@ -73,19 +73,38 @@ function isURI(s: string) {
 }
 
 function mapStringify(m: Map<string, any>) {
-  const doStringify = (m: Map<string, any>): string => {
+  const escapeXml = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+
+  const doStringify = (m: Map<string, any>, tagName?: string): string => {
     if (m instanceof Map) {
-      const ss = [];
+      const children: string[] = [];
 
       for (const [k, v] of m) {
-        ss.push(`"${k}":${doStringify(v)}`);
+        if (v instanceof Map) {
+          children.push(doStringify(v, k));
+        } else if (Array.isArray(v)) {
+          const items = v.map((item: any) =>
+            item instanceof Map ? doStringify(item, k) : `<${k}>${escapeXml(String(item))}</${k}>`
+          );
+          children.push(...items);
+        } else {
+          children.push(`<${k}>${escapeXml(String(v))}</${k}>`);
+        }
       }
 
-      return `{${ss.join(",")}}`;
-    } else if (typeof m === "number") {
-      return `${m}`;
+      if (tagName) {
+        return `<${tagName}>${children.join("")}</${tagName}>`;
+      }
+      return children.join("");
     } else {
-      return JSON.stringify(m);
+      const tag = tagName || "value";
+      return `<${tag}>${escapeXml(String(m))}</${tag}>`;
     }
   };
 

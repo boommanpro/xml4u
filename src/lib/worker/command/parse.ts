@@ -1,9 +1,8 @@
 import { type Kind } from "@/lib/editor/editor";
 import { prettyFormat } from "@/lib/format/pretty";
 import type { Graph } from "@/lib/graph/types";
-import { parseJSON, type StringifyOptions, type TreeObject } from "@/lib/parser";
+import { parseXML, type StringifyOptions, type TreeObject } from "@/lib/parser";
 import { getViewState } from "@/lib/worker/stores/viewStore";
-import { isEmpty } from "lodash-es";
 
 export interface ParseAndFormatOptions extends StringifyOptions {
   kind: Kind;
@@ -17,7 +16,7 @@ export interface ParsedTree {
 
 export async function parseAndFormat(text: string, options?: ParseAndFormatOptions): Promise<ParsedTree> {
   // 5MB costs 240ms
-  const tree = parseJSON(text, options);
+  const tree = parseXML(text, options);
 
   if (options?.kind === "main") {
     getViewState().setTree(tree);
@@ -33,8 +32,6 @@ export async function parseAndFormat(text: string, options?: ParseAndFormatOptio
   if (options?.format) {
     // 5MB costs 69ms
     tree.stringify(options);
-  } else if (!isEmpty(tree.nestNodeMap)) {
-    tree.stringifyNestNodes();
   }
 
   return { treeObject: tree.toObject() };
