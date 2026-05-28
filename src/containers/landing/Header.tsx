@@ -21,7 +21,7 @@ export default function Header() {
       <nav className="flex items-center w-full h-full max-w-page-header md:px-8 px-4">
         <Link prefetch={false} href="/" className="flex items-center gap-2 pointer mr-2">
           <Logo />
-          <span className="font-bold">{"JSON For You"}</span>
+          <span className="font-bold">{"XML For You"}</span>
         </Link>
         <Badge variant="secondary">{`v${version}`}</Badge>
         <div className="md:flex hidden items-center gap-4 ml-4">
@@ -45,7 +45,7 @@ export default function Header() {
             {t("Editor")}
           </LinkButton>
           <Separator className="md:flex hidden" orientation="vertical" />
-          <Link className="md:flex hidden" href="https://github.com/loggerhead/json4u">
+          <Link className="md:flex hidden" href="https://github.com/boommanpro/xml4u">
             <GitHub className="w-6 h-6" />
           </Link>
         </div>

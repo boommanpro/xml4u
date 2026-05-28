@@ -23,10 +23,10 @@ function useFilter() {
     filter = filter.trim();
 
     if (!filter) {
-      toastSucc(t("cmd_exec_succ", { name: t("json_path_filter") }));
+      toastSucc(t("cmd_exec_succ", { name: t("xml_path_filter") }));
       return;
     } else if (!window.worker) {
-      toastErr(t("cmd_exec_fail", { name: t("json_path_filter") }));
+      toastErr(t("cmd_exec_fail", { name: t("xml_path_filter") }));
       return;
     }
 
@@ -37,10 +37,10 @@ function useFilter() {
     const { output, error } = await window.worker.jsonPath(filter);
 
     if (error) {
-      toastErr(t("cmd_exec_fail", { name: t("json_path_filter") }) + ": " + filter);
+      toastErr(t("cmd_exec_fail", { name: t("xml_path_filter") }) + ": " + filter);
     } else {
       await secondary!.parseAndSet(output ?? "", {}, false);
-      toastSucc(t("cmd_exec_succ", { name: t("json_path_filter") }));
+      toastSucc(t("cmd_exec_succ", { name: t("xml_path_filter") }));
     }
   };
 }
@@ -50,7 +50,7 @@ const JsonPathInput: FC = forwardRef<ElementRef<typeof Input>, ComponentPropsWit
     const t = useTranslations();
     const filter = useFilter();
 
-    return <InputBox id="json-path-input" run={filter} placeholder={t("json_path_placeholder")} {...props} />;
+    return <InputBox id="json-path-input" run={filter} placeholder={t("xml_path_placeholder")} {...props} />;
   },
 );
 

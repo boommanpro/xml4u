@@ -19,7 +19,7 @@ export default function ViewSearchInput() {
       onSelect={(item) => setRevealPosition({ treeNodeId: item.id, target: item.revealTarget, from: "search" })}
       Item={Item}
       itemHeight={48}
-      placeholder={"search_json"}
+      placeholder={"search_xml"}
       bindShortcut="F"
     />
   );

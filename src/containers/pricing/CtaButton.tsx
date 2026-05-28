@@ -8,7 +8,6 @@ import { MessageKey } from "@/global";
 import type { SubscriptionType } from "@/lib/shop/types";
 import { cn, toastErr } from "@/lib/utils";
 import { useUserStore } from "@/stores/userStore";
-import { sendGAEvent } from "@next/third-parties/google";
 import { useTranslations } from "next-intl";
 
 export interface PricingTier {
@@ -68,9 +67,6 @@ export function CtaButton({ tier: { plan, highlighted, cta } }: CtaButtonProps) 
       router.push("/editor");
     }
 
-    sendGAEvent("event", action, {
-      plan: plan,
-    });
     setLoading(false);
   };
 

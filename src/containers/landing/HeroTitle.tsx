@@ -33,8 +33,8 @@ export default function Title() {
           width="1280"
           height="720"
           className="mt-8 rounded-md shadow-2xl border sm:mt-12 block"
-          src={isCN ? "https://o.json4u.cn/json4u.mp4" : "https://o.json4u.com/json4u.mp4"}
-          poster={getAssetPath("example/json4u.webp")}
+          src={isCN ? "https://o.xml4u.cn/xml4u.mp4" : "https://o.xml4u.com/xml4u.mp4"}
+          poster={getAssetPath("example/xml4u.webp")}
           autoPlay
           loop
           muted

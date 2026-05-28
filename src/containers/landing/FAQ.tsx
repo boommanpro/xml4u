@@ -65,7 +65,7 @@ function Advantages() {
         <tr>
           <th className="bg-muted" />
           <th align="center" className="bg-muted border-x lg:min-w-36 md:min-w-32 p-2">
-            {"JSON For You"}
+            {"XML For You"}
           </th>
           <th align="center" className="bg-muted lg:min-w-36 md:min-w-32 p-2">
             {t("Others")}
@@ -80,7 +80,7 @@ function Advantages() {
           "Validate with Error Context Display",
           "BigInt & int64 Support",
           "Convert From/To CSV",
-          "Reveal via JSON Path",
+          "Reveal via XML Path",
           "Support jq",
         ].map((feature: MessageKey) => (
           <tr key={feature} className="border-b last:border-b-0">

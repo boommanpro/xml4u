@@ -10,17 +10,17 @@ import { useTranslations } from "next-intl";
 export default function Footer() {
   const t = useTranslations("Home");
   const items: FooterLinkProps[] = [
-    { href: "https://www.trustpilot.com/review/json4u.com", title: t("Give a rating") },
+    { href: "https://www.trustpilot.com/review/xml4u.com", title: t("Give a rating") },
     ...(isCN
       ? [
           { href: "https://support.qq.com/product/670462", title: t("Feedback") },
           { href: "https://weibo.com/loggerhead", title: <Weibo className="icon" /> },
         ]
       : [
-          { href: "https://github.com/loggerhead/json4u/issues/new", title: t("Feedback") },
+          { href: "https://github.com/boommanpro/xml4u/issues/new", title: t("Feedback") },
           { href: "https://x.com/1oggerhead", title: <Twitter className="icon" /> },
         ]),
-    { href: "https://github.com/loggerhead/json4u", title: <GitHub className="icon" /> },
+    { href: "https://github.com/boommanpro/xml4u", title: <GitHub className="icon" /> },
   ];
 
   return (
@@ -28,7 +28,7 @@ export default function Footer() {
       <div className="flex items-center w-full max-w-page-header md:px-8 px-4 gap-x-8 text-xs text-slate-500">
         <div className="flex items-center gap-2">
           <Logo className="w-[20px] h-[20px] text-slate-500" />
-          <span>{"© 2025 JSON For You"}</span>
+          <span>{"© 2025 XML For You"}</span>
         </div>
         <Legal />
         {isCN && <Upyun />}
@@ -51,7 +51,7 @@ function Upyun() {
         <div className="inline-flex items-center justify-center h-6">
           <span className="flex">{"本网站由"}</span>
           <img
-            src="https://o.json4u.cn/upyun-logo.png"
+            src="https://o.xml4u.cn/upyun-logo.png"
             className="h-full px-0.5 mx-0.5 bg-blue-500"
             alt="又拍云 logo"
           />

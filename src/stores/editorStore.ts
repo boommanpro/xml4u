@@ -2,7 +2,6 @@ import { type MessageKey } from "@/global";
 import { Comparer } from "@/lib/editor/comparer";
 import type { Kind, EditorWrapper } from "@/lib/editor/editor";
 import { toastErr, toastSucc, toastWarn } from "@/lib/utils";
-import { sendGAEvent } from "@next/third-parties/google";
 import { ArrowDownNarrowWide, ArrowDownWideNarrow, type LucideIcon } from "lucide-react";
 import type { TranslationValues, useTranslations } from "next-intl";
 import { create } from "zustand";
@@ -125,8 +124,6 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
         isSucc = false;
       }
     }
-
-    sendGAEvent("event", "cmd_usage", { name, isSucc });
   },
 
   setTranslations(translations: ReturnType<typeof useTranslations>) {

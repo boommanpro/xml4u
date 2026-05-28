@@ -1,6 +1,6 @@
-export const initialJSONParamName = "json";
+export const initialXMLParamName = "xml";
 
 export function getInitialJSONFromSearch(search: string) {
   const searchParams = new URLSearchParams(search);
-  return searchParams.has(initialJSONParamName) ? searchParams.get(initialJSONParamName)! : undefined;
+  return searchParams.has(initialXMLParamName) ? searchParams.get(initialXMLParamName)! : undefined;
 }

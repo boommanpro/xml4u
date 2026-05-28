@@ -19,8 +19,8 @@ function getEntry(pathname: string) {
     lastModified: new Date(),
     alternates: {
       languages: {
-        en: getUrl(pathname, "https://json4u.com"),
-        zh: getUrl(pathname, "https://json4u.cn"),
+        en: getUrl(pathname, "https://xml4u.com"),
+        zh: getUrl(pathname, "https://xml4u.cn"),
       },
     },
   };

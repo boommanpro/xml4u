@@ -1,25 +1,25 @@
 import Refer from "../Refer";
 
 export const metadata = {
-  title: "How to Use JSONPath?",
-  keywords: "JSONPath, JSONPath evaluator, online tool, JSON query, JSON tester, JSONPath expressions",
+  title: "How to Use XMLPath?",
+  keywords: "XMLPath, XMLPath evaluator, online tool, XML query, XML tester, XMLPath expressions",
   description:
-    "An easy-to-use online tool to evaluate and test JSONPath expressions against your JSON data. Instantly validate and debug your JSON queries.",
+    "An easy-to-use online tool to evaluate and test XMLPath expressions against your XML data. Instantly validate and debug your XML queries.",
 };
 
-# How to Use JSONPath?
+# How to Use XMLPath?
 
-JSONPath is a powerful JSON query language that allows you to accurately select and extract data from JSON documents, similar to XPath for XML. It provides a flexible way to navigate and filter JSON structures.
+XMLPath is a powerful XML query language that allows you to accurately select and extract data from XML documents, similar to XPath for HTML. It provides a flexible way to navigate and filter XML structures.
 
-JSON For You supports online JSONPath processing, just follow these steps:
+XML For You supports online XMLPath processing, just follow these steps:
 
-1. Paste the JSON string into the left editor;
-2. Click "Search Command" at the top, find "**Show JSONPath filter box**", and an input box will appear at the bottom after clicking;
-3. Enter a JSONPath expression to execute it automatically;
+1. Paste the XML string into the left editor;
+2. Click "Search Command" at the top, find "**Show XMLPath filter box**", and an input box will appear at the bottom after clicking;
+3. Enter a XMLPath expression to execute it automatically;
 4. You can view the results in the right editor;
 5. When you need to edit multiple times, you can quickly swap the text in the left and right editors with the `Ctrl+Enter` shortcut;
 
-## JSONPath Syntax Basics
+## XMLPath Syntax Basics
 
 <table>
   <thead>
@@ -105,24 +105,24 @@ JSON For You supports online JSONPath processing, just follow these steps:
   </tbody>
 </table>
 
-## JSONPath Practical Examples
+## XMLPath Practical Examples
 
 ### Example 1: Basic Property Access
 
-JSON data:
+XML data:
 
 ```json
 {
-  "name": "JSON For You",
-  "features": ["formatting", "validation", "JSONPath"]
+  "name": "XML For You",
+  "features": ["formatting", "validation", "XMLPath"]
 }
 ```
 
-JSONPath expression: `$.name`, result: `"JSON For You"`
+XMLPath expression: `$.name`, result: `"XML For You"`
 
 ### Example 2: Array Indexing
 
-JSON data:
+XML data:
 
 ```json
 {
@@ -133,11 +133,11 @@ JSON data:
 }
 ```
 
-JSONPath expression: `$.users[1].name`, result: `"Doe"`
+XMLPath expression: `$.users[1].name`, result: `"Doe"`
 
 ### Example 3: Conditional Filtering
 
-JSON data:
+XML data:
 
 ```json
 {
@@ -149,14 +149,14 @@ JSON data:
 }
 ```
 
-JSONPath expression: `$.products[?(@.price < 100)]`, result: returns the mouse and keyboard objects
+XMLPath expression: `$.products[?(@.price < 100)]`, result: returns the mouse and keyboard objects
 
 ## Use Cases
 
 - **API Development**: Extract specific fields from complex API responses
-- **Data Analysis**: Filter and aggregate JSON data for reports
-- **Configuration Management**: Retrieve settings from nested JSON configuration files
-- **Test Automation**: Validate JSON responses in API tests
-- **Log Analysis**: Extract meaningful information from JSON formatted logs
+- **Data Analysis**: Filter and aggregate XML data for reports
+- **Configuration Management**: Retrieve settings from nested XML configuration files
+- **Test Automation**: Validate XML responses in API tests
+- **Log Analysis**: Extract meaningful information from XML formatted logs
 
 <Refer />

@@ -18,7 +18,7 @@ export default function SharePopover() {
           <Label htmlFor="link" className="sr-only">
             {t("Link")}
           </Label>
-          <Input id="link" defaultValue="https://json4u.com/en/editor?share=aUuXS" readOnly className="h-9" />
+          <Input id="link" defaultValue="https://xml4u.com/en/editor?share=aUuXS" readOnly className="h-9" />
         </div>
         <Button type="submit" size="sm" className="px-3">
           <span className="sr-only">{t("Copy")}</span>

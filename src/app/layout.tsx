@@ -14,9 +14,9 @@ export async function generateMetadata() {
     alternates: {
       canonical: "/",
       languages: {
-        en: "https://json4u.com",
-        zh: "https://json4u.cn",
-        "x-default": "https://json4u.com",
+        en: "https://xml4u.com",
+        zh: "https://xml4u.cn",
+        "x-default": "https://xml4u.com",
       },
     },
     applicationName: t("name"),
@@ -58,13 +58,6 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6579013241267492"
-          crossOrigin="anonymous"
-        ></script>
-      </head>
       <body>
         {/* TODO: support dark theme */}
         <ThemeProvider defaultTheme="light" forcedTheme="light" disableTransitionOnChange>

@@ -3,44 +3,44 @@ import Refer from "../Refer";
 export const metadata = {
   title: "How to Use jq?",
   keywords:
-    "jq online, json formatter, json validator, jq playground, json query, jq cheatsheet, online jq tool, json parser, json viewer, jq filter, jq syntax, json processor, web-based jq, json manipulation, jq tester",
+    "jq online, xml formatter, xml validator, jq playground, xml query, jq cheatsheet, online jq tool, xml parser, xml viewer, jq filter, jq syntax, xml processor, web-based jq, xml manipulation, jq tester",
   description:
-    "Powerful online tool to format, validate, query, and transform JSON data using jq syntax. A real-time jq playground for developers.",
+    "Powerful online tool to format, validate, query, and transform XML data using jq syntax. A real-time jq playground for developers.",
 };
 
 # How to Use jq?
 
-jq is a powerful command-line JSON processor that allows developers to easily filter, map, and transform JSON data just like using `sed`, `awk`, and `grep` to process text. jq offers many advantages for processing JSON data:
+jq is a powerful command-line XML processor that allows developers to easily filter, map, and transform XML data just like using `sed`, `awk`, and `grep` to process text. jq offers many advantages for processing XML data:
 
-- **Lightweight and efficient**: Process JSON without loading the entire dataset
+- **Lightweight and efficient**: Process XML without loading the entire dataset
 - **Powerful query language**: Support complex data transformation and filtering
-- **High performance**: Maintain fast response even when processing large JSON files
+- **High performance**: Maintain fast response even when processing large XML files
 - **Rich community support**: Complete documentation and numerous examples
 
 Typical application scenarios include:
 
 - **API response processing**: Extract relevant data from complex API responses
-- **Log analysis**: Parse and filter JSON formatted log files
-- **Data cleaning**: Preprocess JSON data for data analysis
-- **Configuration transformation**: Batch modify JSON configuration files
+- **Log analysis**: Parse and filter XML formatted log files
+- **Data cleaning**: Preprocess XML data for data analysis
+- **Configuration transformation**: Batch modify XML configuration files
 
-## Using jq in JSON For You
+## Using jq in XML For You
 
-JSON For You supports online jq processing, just follow these steps:
+XML For You supports online jq processing, just follow these steps:
 
-1. Paste the JSON string into the left editor;
+1. Paste the XML string into the left editor;
 2. Click "Search Command" at the top, find "**Show jq input box**", and a jq input box will appear at the bottom after clicking;
 3. Enter a jq expression (for example: `.[] | select(.status == "active")`) to automatically execute the jq command;
 4. You can view the results in the right editor;
 5. When you need to edit multiple times, you can quickly swap the text in the left and right editors with the `Ctrl+Enter` shortcut;
 
-<img src="/example/jq.gif" alt="Using jq in JSON For You" />
+<img src="/example/jq.gif" alt="Using jq in XML For You" />
 
 ## Common jq Command Examples
 
 ### Basic Filtering
 
-Extract specific fields from a JSON object:
+Extract specific fields from an XML object:
 
 ```bash
 # Get all usernames in an array
@@ -52,7 +52,7 @@ Extract specific fields from a JSON object:
 
 ### Data Transformation
 
-Modify the JSON structure and values:
+Modify the XML structure and values:
 
 ```bash
 # Add a new field

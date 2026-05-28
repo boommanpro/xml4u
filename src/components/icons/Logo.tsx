@@ -12,7 +12,7 @@ export default function Logo({ size, className }: LogoProps) {
       width={size}
       height={size}
       className={cn("max-w-full max-h-full", className)}
-      alt="JSON For You logo"
+      alt="XML For You logo"
     />
   );
 }

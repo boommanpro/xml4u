@@ -81,7 +81,7 @@ function JsonPath() {
         ))}
         <div
           className="opacity-0 group-hover:opacity-100 hover:cursor-pointer transition-opacity duration-2000 ease-in-out"
-          title={t("copy_json_path")}
+          title={t("copy_xml_path")}
           onClick={() => {
             navigator.clipboard.writeText(pathString).then(() => {
               setCopied(true);
